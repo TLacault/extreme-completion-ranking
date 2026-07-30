@@ -1,8 +1,12 @@
 import { ref, watch, computed, reactive, type Ref } from 'vue'
 import type { Level } from '../types'
 import { seedLevels } from '../data/seedLevels'
+import { refreshRanks as syncRanks } from '../services/rankSync'
 
 export const STORAGE_KEY = 'ecr:levels:v1'
+export const LAST_SYNC_KEY = 'ecr:lastSync:v1'
+
+export type SyncStatus = 'idle' | 'syncing' | 'error'
 
 export type SortKey = 'rank' | 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'name'
 export type SortDir = 'asc' | 'desc'
@@ -198,6 +202,24 @@ export function useLevels() {
     levels.value = structuredClone(seedLevels)
   }
 
+  const lastSyncedAt = ref<string | null>(localStorage.getItem(LAST_SYNC_KEY))
+  const syncStatus = ref<SyncStatus>('idle')
+  const syncError = ref<string | null>(null)
+
+  async function refreshRanks(): Promise<void> {
+    syncStatus.value = 'syncing'
+    syncError.value = null
+    const result = await syncRanks(levels.value, updateLevel)
+    if (result.error) {
+      syncStatus.value = 'error'
+      syncError.value = result.error
+      return
+    }
+    syncStatus.value = 'idle'
+    lastSyncedAt.value = new Date().toISOString()
+    localStorage.setItem(LAST_SYNC_KEY, lastSyncedAt.value)
+  }
+
   return {
     levels,
     addLevel,
@@ -212,5 +234,9 @@ export function useLevels() {
     exportJson,
     importJson,
     resetToSeed,
+    lastSyncedAt,
+    syncStatus,
+    syncError,
+    refreshRanks,
   }
 }

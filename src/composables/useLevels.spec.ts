@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { useLevels, STORAGE_KEY } from './useLevels'
+import { useLevels, STORAGE_KEY, LAST_SYNC_KEY } from './useLevels'
 import { seedLevels } from '../data/seedLevels'
+import { refreshRanks as mockRefreshRanks } from '../services/rankSync'
+
+vi.mock('../services/rankSync', () => ({
+  refreshRanks: vi.fn(),
+}))
 
 describe('useLevels — seed loading', () => {
   beforeEach(() => localStorage.clear())
@@ -215,5 +220,47 @@ describe('useLevels — import/export/reset', () => {
     resetToSeed()
     expect(levels.value).toHaveLength(35)
     expect(levels.value[0].name).toBe('Auditory Breaker')
+  })
+})
+
+describe('useLevels — rank sync', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    vi.mocked(mockRefreshRanks).mockReset()
+  })
+
+  it('starts with lastSyncedAt null when no prior sync is stored', () => {
+    const { lastSyncedAt, syncStatus } = useLevels()
+    expect(lastSyncedAt.value).toBeNull()
+    expect(syncStatus.value).toBe('idle')
+  })
+
+  it('loads a previously stored lastSyncedAt timestamp', () => {
+    localStorage.setItem(LAST_SYNC_KEY, '2026-07-01T00:00:00.000Z')
+    const { lastSyncedAt } = useLevels()
+    expect(lastSyncedAt.value).toBe('2026-07-01T00:00:00.000Z')
+  })
+
+  it('refreshRanks updates and persists lastSyncedAt on success', async () => {
+    vi.mocked(mockRefreshRanks).mockResolvedValue({ aredlOk: true, dlOk: true, matchedCount: 2, error: null })
+    const { refreshRanks, lastSyncedAt, syncStatus } = useLevels()
+
+    await refreshRanks()
+
+    expect(syncStatus.value).toBe('idle')
+    expect(lastSyncedAt.value).not.toBeNull()
+    expect(localStorage.getItem(LAST_SYNC_KEY)).toBe(lastSyncedAt.value)
+  })
+
+  it('sets syncStatus to error and leaves lastSyncedAt untouched when the sync fails', async () => {
+    vi.mocked(mockRefreshRanks).mockResolvedValue({ aredlOk: false, dlOk: true, matchedCount: 0, error: 'AREDL: boom' })
+    const { refreshRanks, lastSyncedAt, syncStatus, syncError } = useLevels()
+
+    await refreshRanks()
+
+    expect(syncStatus.value).toBe('error')
+    expect(syncError.value).toBe('AREDL: boom')
+    expect(lastSyncedAt.value).toBeNull()
+    expect(localStorage.getItem(LAST_SYNC_KEY)).toBeNull()
   })
 })
