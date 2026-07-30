@@ -27,6 +27,43 @@ function inRange(value: number | null, min: number | null, max: number | null): 
   return true
 }
 
+export interface ImportResult {
+  ok: boolean
+  error?: string
+}
+
+const LEVEL_FIELD_TYPES: Record<keyof Level, 'string' | 'number' | 'nullable-string' | 'nullable-number'> = {
+  id: 'string',
+  rank: 'number',
+  name: 'string',
+  aredlRank: 'nullable-number',
+  dlRank: 'nullable-number',
+  attempts: 'nullable-number',
+  attemptsNote: 'string',
+  date: 'nullable-string',
+  dateNote: 'string',
+  enjoyment: 'nullable-number',
+  creator: 'string',
+  videoUrl: 'string',
+  levelId: 'string',
+  notes: 'string',
+}
+
+function validateLevel(item: unknown, index: number): string | null {
+  if (typeof item !== 'object' || item === null) return `Entry ${index}: not an object.`
+  const record = item as Record<string, unknown>
+  for (const [field, kind] of Object.entries(LEVEL_FIELD_TYPES) as [keyof Level, string][]) {
+    const value = record[field]
+    const ok =
+      (kind === 'string' && typeof value === 'string') ||
+      (kind === 'number' && typeof value === 'number') ||
+      (kind === 'nullable-string' && (value === null || typeof value === 'string')) ||
+      (kind === 'nullable-number' && (value === null || typeof value === 'number'))
+    if (!ok) return `Entry ${index}: missing or invalid field "${field}".`
+  }
+  return null
+}
+
 function generateId(): string {
   return `lvl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`
 }
@@ -135,5 +172,45 @@ export function useLevels() {
 
   const visibleLevels = computed(() => levels.value.filter(matchesFilters).sort(compareLevels))
 
-  return { levels, addLevel, updateLevel, deleteLevel, reorderLevels, sortKey, sortDir, setSort, filters, visibleLevels }
+  function exportJson(): string {
+    return JSON.stringify(levels.value, null, 2)
+  }
+
+  function importJson(jsonText: string): ImportResult {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(jsonText)
+    } catch {
+      return { ok: false, error: 'Invalid JSON: the file could not be parsed.' }
+    }
+    if (!Array.isArray(parsed)) {
+      return { ok: false, error: 'Expected a JSON array of levels.' }
+    }
+    for (let i = 0; i < parsed.length; i++) {
+      const error = validateLevel(parsed[i], i)
+      if (error) return { ok: false, error }
+    }
+    levels.value = parsed as Level[]
+    return { ok: true }
+  }
+
+  function resetToSeed(): void {
+    levels.value = structuredClone(seedLevels)
+  }
+
+  return {
+    levels,
+    addLevel,
+    updateLevel,
+    deleteLevel,
+    reorderLevels,
+    sortKey,
+    sortDir,
+    setSort,
+    filters,
+    visibleLevels,
+    exportJson,
+    importJson,
+    resetToSeed,
+  }
 }

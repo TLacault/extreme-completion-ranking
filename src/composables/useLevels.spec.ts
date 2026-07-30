@@ -162,3 +162,58 @@ describe('useLevels — filtering', () => {
     expect(attempts).toEqual([...attempts].sort((a, b) => a - b))
   })
 })
+
+describe('useLevels — import/export/reset', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('exportJson serializes the current levels as valid JSON', () => {
+    const { levels, exportJson } = useLevels()
+    const parsed = JSON.parse(exportJson())
+    expect(parsed).toEqual(levels.value)
+  })
+
+  it('importJson accepts a well-formed Level[] and replaces the dataset', () => {
+    const { levels, importJson } = useLevels()
+    const replacement = [
+      { id: 'a', rank: 1, name: 'Imported', aredlRank: null, dlRank: null, attempts: null, attemptsNote: '', date: null, dateNote: '', enjoyment: null, creator: '', videoUrl: '', levelId: '', notes: '' },
+    ]
+    const result = importJson(JSON.stringify(replacement))
+    expect(result.ok).toBe(true)
+    expect(levels.value).toEqual(replacement)
+  })
+
+  it('importJson rejects non-JSON input and leaves existing data untouched', () => {
+    const { levels, importJson } = useLevels()
+    const before = [...levels.value]
+    const result = importJson('not json')
+    expect(result.ok).toBe(false)
+    expect(result.error).toBeTruthy()
+    expect(levels.value).toEqual(before)
+  })
+
+  it('importJson rejects a JSON object that is not an array', () => {
+    const { levels, importJson } = useLevels()
+    const before = [...levels.value]
+    const result = importJson(JSON.stringify({ not: 'an array' }))
+    expect(result.ok).toBe(false)
+    expect(levels.value).toEqual(before)
+  })
+
+  it('importJson rejects entries missing required fields', () => {
+    const { levels, importJson } = useLevels()
+    const before = [...levels.value]
+    const result = importJson(JSON.stringify([{ id: 'a', rank: 1 }]))
+    expect(result.ok).toBe(false)
+    expect(result.error).toContain('name')
+    expect(levels.value).toEqual(before)
+  })
+
+  it('resetToSeed restores the original 35-entry seed dataset after mutation', () => {
+    const { levels, addLevel, resetToSeed } = useLevels()
+    addLevel({ name: 'Temp', aredlRank: null, dlRank: null, attempts: null, attemptsNote: '', date: null, dateNote: '', enjoyment: null, creator: '', videoUrl: '', levelId: '', notes: '' })
+    expect(levels.value).toHaveLength(36)
+    resetToSeed()
+    expect(levels.value).toHaveLength(35)
+    expect(levels.value[0].name).toBe('Auditory Breaker')
+  })
+})
