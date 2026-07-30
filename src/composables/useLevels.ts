@@ -1,4 +1,4 @@
-import { ref, watch, computed, type Ref } from 'vue'
+import { ref, watch, computed, reactive, type Ref } from 'vue'
 import type { Level } from '../types'
 import { seedLevels } from '../data/seedLevels'
 
@@ -6,6 +6,26 @@ export const STORAGE_KEY = 'ecr:levels:v1'
 
 export type SortKey = 'rank' | 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'name'
 export type SortDir = 'asc' | 'desc'
+
+export interface Filters {
+  search: string
+  attemptsMin: number | null
+  attemptsMax: number | null
+  enjoymentMin: number | null
+  enjoymentMax: number | null
+  rankMin: number | null
+  rankMax: number | null
+  dateFrom: string | null
+  dateTo: string | null
+}
+
+function inRange(value: number | null, min: number | null, max: number | null): boolean {
+  if (min === null && max === null) return true
+  if (value === null) return false
+  if (min !== null && value < min) return false
+  if (max !== null && value > max) return false
+  return true
+}
 
 function generateId(): string {
   return `lvl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`
@@ -85,7 +105,35 @@ export function useLevels() {
     return sortDir.value === 'asc' ? cmp : -cmp
   }
 
-  const visibleLevels = computed(() => [...levels.value].sort(compareLevels))
+  const filters = reactive<Filters>({
+    search: '',
+    attemptsMin: null,
+    attemptsMax: null,
+    enjoymentMin: null,
+    enjoymentMax: null,
+    rankMin: null,
+    rankMax: null,
+    dateFrom: null,
+    dateTo: null,
+  })
 
-  return { levels, addLevel, updateLevel, deleteLevel, reorderLevels, sortKey, sortDir, setSort, visibleLevels }
+  function matchesFilters(level: Level): boolean {
+    const search = filters.search.trim().toLowerCase()
+    if (search && !level.name.toLowerCase().includes(search) && !level.creator.toLowerCase().includes(search)) {
+      return false
+    }
+    if (!inRange(level.attempts, filters.attemptsMin, filters.attemptsMax)) return false
+    if (!inRange(level.enjoyment, filters.enjoymentMin, filters.enjoymentMax)) return false
+    if (!inRange(level.rank, filters.rankMin, filters.rankMax)) return false
+    if (filters.dateFrom !== null || filters.dateTo !== null) {
+      if (level.date === null) return false
+      if (filters.dateFrom !== null && level.date < filters.dateFrom) return false
+      if (filters.dateTo !== null && level.date > filters.dateTo) return false
+    }
+    return true
+  }
+
+  const visibleLevels = computed(() => levels.value.filter(matchesFilters).sort(compareLevels))
+
+  return { levels, addLevel, updateLevel, deleteLevel, reorderLevels, sortKey, sortDir, setSort, filters, visibleLevels }
 }

@@ -114,3 +114,51 @@ describe('useLevels — sorting', () => {
     expect(visibleLevels.value[visibleLevels.value.length - 1].attempts).toBeNull()
   })
 })
+
+describe('useLevels — filtering', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('search matches name case-insensitively', () => {
+    const { filters, visibleLevels } = useLevels()
+    filters.search = 'gravity'
+    expect(visibleLevels.value.map((l) => l.name)).toEqual(['Gravity'])
+  })
+
+  it('search matches creator case-insensitively', () => {
+    const { levels, filters, visibleLevels } = useLevels()
+    levels.value[0].creator = 'SomeCreator'
+    filters.search = 'somecreator'
+    expect(visibleLevels.value).toHaveLength(1)
+    expect(visibleLevels.value[0].id).toBe(levels.value[0].id)
+  })
+
+  it('filters by attempts range, excluding entries with null attempts', () => {
+    const { filters, visibleLevels } = useLevels()
+    filters.attemptsMin = 5000
+    filters.attemptsMax = 9000
+    for (const level of visibleLevels.value) {
+      expect(level.attempts).not.toBeNull()
+      expect(level.attempts!).toBeGreaterThanOrEqual(5000)
+      expect(level.attempts!).toBeLessThanOrEqual(9000)
+    }
+  })
+
+  it('filters by date range, excluding entries with null date', () => {
+    const { filters, visibleLevels } = useLevels()
+    filters.dateFrom = '2026-01-01'
+    filters.dateTo = '2026-12-31'
+    for (const level of visibleLevels.value) {
+      expect(level.date).not.toBeNull()
+      expect(level.date! >= '2026-01-01' && level.date! <= '2026-12-31').toBe(true)
+    }
+  })
+
+  it('combines search, range filters, and sort together', () => {
+    const { filters, setSort, visibleLevels } = useLevels()
+    filters.attemptsMin = 1000
+    setSort('attempts')
+    const attempts = visibleLevels.value.map((l) => l.attempts!)
+    expect(attempts.every((a) => a >= 1000)).toBe(true)
+    expect(attempts).toEqual([...attempts].sort((a, b) => a - b))
+  })
+})
