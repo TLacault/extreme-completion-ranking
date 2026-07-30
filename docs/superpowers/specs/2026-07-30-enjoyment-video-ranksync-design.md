@@ -69,7 +69,7 @@ function fetchDlLevels(): Promise<RemoteLevel[]>       // loops pages via `after
 
 If a level is "not found" in a given list, that list's rank field (`aredlRank` or `dlRank`) is left untouched — never cleared to `null` (per design decision: absence from a fetch isn't treated as authoritative removal, since it could also mean a temporary API hiccup or a mismatched name).
 
-**`refreshRanks()`:** fetches both lists in parallel (`Promise.allSettled`, so one API being down doesn't block the other), applies matches via `updateLevel` for each local level, and on any successful fetch updates `lastSyncedAt`. Returns a result summary (`{ aredlOk, dlOk, matchedCount, error? }`) for the UI to display.
+**`refreshRanks()`:** fetches both lists in parallel (`Promise.allSettled`, so a rejected promise from one doesn't throw before the other resolves). Matches and `updateLevel` calls are applied only if **both** fetches succeed; if either fails, no level data changes and `lastSyncedAt` is not updated (all-or-nothing, matching the Error handling section below). Returns a result summary (`{ aredlOk, dlOk, matchedCount, error? }`) for the UI to display.
 
 **Composable additions to `useLevels`:**
 ```ts
