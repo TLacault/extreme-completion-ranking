@@ -105,13 +105,19 @@ function onSubmit(): void {
         </div>
         <label>
           Enjoyment (0-10)
-          <input
-            :value="form.enjoyment ?? ''"
-            @input="form.enjoyment = toNullableNumber(($event.target as HTMLInputElement).value)"
-            type="number"
-            min="0"
-            max="10"
-          />
+          <div class="slider-row">
+            <input
+              class="slider"
+              :value="form.enjoyment ?? 5"
+              @input="form.enjoyment = Number(($event.target as HTMLInputElement).value)"
+              type="range"
+              min="0"
+              max="10"
+              step="1"
+            />
+            <span class="slider-value mono">{{ form.enjoyment ?? '—' }}</span>
+            <button type="button" class="btn btn-clear" @click="form.enjoyment = null">Clear</button>
+          </div>
         </label>
         <label>
           Video URL
@@ -186,6 +192,28 @@ textarea {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.slider-row .slider {
+  flex: 1;
+}
+
+.slider-value {
+  min-width: 1.4rem;
+  text-align: right;
+  color: var(--text);
+  font-family: var(--font-mono);
+}
+
+.btn-clear {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
 }
 
 .actions {
