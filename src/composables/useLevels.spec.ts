@@ -80,3 +80,37 @@ describe('useLevels — persistence', () => {
     vi.useRealTimers()
   })
 })
+
+describe('useLevels — sorting', () => {
+  beforeEach(() => localStorage.clear())
+
+  it('defaults to sorting by rank ascending', () => {
+    const { visibleLevels } = useLevels()
+    const ranks = visibleLevels.value.map((l) => l.rank)
+    expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
+  })
+
+  it('setSort on a new key sorts ascending by that key', () => {
+    const { setSort, visibleLevels } = useLevels()
+    setSort('attempts')
+    const nonNull = visibleLevels.value.filter((l) => l.attempts !== null).map((l) => l.attempts!)
+    expect(nonNull).toEqual([...nonNull].sort((a, b) => a - b))
+  })
+
+  it('setSort on the same key twice flips to descending', () => {
+    const { setSort, visibleLevels } = useLevels()
+    setSort('attempts')
+    setSort('attempts')
+    const nonNull = visibleLevels.value.filter((l) => l.attempts !== null).map((l) => l.attempts!)
+    expect(nonNull).toEqual([...nonNull].sort((a, b) => b - a))
+  })
+
+  it('sorts null values last regardless of direction', () => {
+    const { setSort, sortDir, visibleLevels } = useLevels()
+    setSort('attempts')
+    expect(visibleLevels.value[visibleLevels.value.length - 1].attempts).toBeNull()
+    setSort('attempts')
+    expect(sortDir.value).toBe('desc')
+    expect(visibleLevels.value[visibleLevels.value.length - 1].attempts).toBeNull()
+  })
+})

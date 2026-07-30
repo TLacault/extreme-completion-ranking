@@ -1,8 +1,11 @@
-import { ref, watch, type Ref } from 'vue'
+import { ref, watch, computed, type Ref } from 'vue'
 import type { Level } from '../types'
 import { seedLevels } from '../data/seedLevels'
 
 export const STORAGE_KEY = 'ecr:levels:v1'
+
+export type SortKey = 'rank' | 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'name'
+export type SortDir = 'asc' | 'desc'
 
 function generateId(): string {
   return `lvl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`
@@ -59,5 +62,30 @@ export function useLevels() {
     })
   }
 
-  return { levels, addLevel, updateLevel, deleteLevel, reorderLevels }
+  const sortKey = ref<SortKey>('rank')
+  const sortDir = ref<SortDir>('asc')
+
+  function setSort(key: SortKey): void {
+    if (sortKey.value === key) {
+      sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+    } else {
+      sortKey.value = key
+      sortDir.value = 'asc'
+    }
+  }
+
+  function compareLevels(a: Level, b: Level): number {
+    const key = sortKey.value
+    const av = key === 'name' ? a.name : a[key]
+    const bv = key === 'name' ? b.name : b[key]
+    if (av === null && bv === null) return 0
+    if (av === null) return 1
+    if (bv === null) return -1
+    const cmp = typeof av === 'string' ? av.localeCompare(bv as string) : (av as number) - (bv as number)
+    return sortDir.value === 'asc' ? cmp : -cmp
+  }
+
+  const visibleLevels = computed(() => [...levels.value].sort(compareLevels))
+
+  return { levels, addLevel, updateLevel, deleteLevel, reorderLevels, sortKey, sortDir, setSort, visibleLevels }
 }
