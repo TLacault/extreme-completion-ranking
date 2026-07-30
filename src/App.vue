@@ -1,11 +1,12 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useLevels } from './composables/useLevels'
 import type { Level } from './types'
 import LevelTable from './components/LevelTable.vue'
 import LevelFormModal from './components/LevelFormModal.vue'
 import FilterBar from './components/FilterBar.vue'
 import DataToolbar from './components/DataToolbar.vue'
+import VideoPreviewModal from './components/VideoPreviewModal.vue'
 
 const {
   addLevel,
@@ -20,11 +21,23 @@ const {
   exportJson,
   importJson,
   resetToSeed,
+  lastSyncedAt,
+  syncStatus,
+  syncError,
+  refreshRanks,
 } = useLevels()
 
 const editingLevel = ref<Level | null>(null)
 const showModal = ref(false)
 const importError = ref<string | null>(null)
+const playingVideoId = ref<string | null>(null)
+
+const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+onMounted(() => {
+  const isStale = !lastSyncedAt.value || Date.now() - new Date(lastSyncedAt.value).getTime() > ONE_DAY_MS
+  if (isStale) refreshRanks()
+})
 
 function openCreate(): void {
   editingLevel.value = null
@@ -69,7 +82,15 @@ function onImport(text: string): void {
     </div>
     <div class="header-actions">
       <button class="btn btn-primary" @click="openCreate">Add level</button>
-      <DataToolbar @export="onExport" @import="onImport" @reset="resetToSeed" />
+      <DataToolbar
+        :last-synced-at="lastSyncedAt"
+        :sync-status="syncStatus"
+        :sync-error="syncError"
+        @export="onExport"
+        @import="onImport"
+        @reset="resetToSeed"
+        @refresh-ranks="refreshRanks"
+      />
     </div>
   </header>
 
@@ -85,9 +106,11 @@ function onImport(text: string): void {
     @edit="openEdit"
     @delete="deleteLevel"
     @reorder="reorderLevels"
+    @play-video="playingVideoId = $event"
   />
 
   <LevelFormModal v-if="showModal" :level="editingLevel" @save="onSave" @close="showModal = false" />
+  <VideoPreviewModal v-if="playingVideoId" :video-id="playingVideoId" @close="playingVideoId = null" />
 </template>
 
 <style scoped>

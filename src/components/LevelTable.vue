@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import type { Level } from '../types'
 import type { SortKey, SortDir } from '../composables/useLevels'
+import { getYoutubeVideoId } from '../utils/youtube'
 
 const props = defineProps<{
   levels: Level[]
@@ -14,6 +15,7 @@ const emit = defineEmits<{
   edit: [level: Level]
   delete: [id: string]
   reorder: [ids: string[]]
+  playVideo: [videoId: string]
 }>()
 
 const columns: { key: SortKey; label: string }[] = [
@@ -37,6 +39,15 @@ function heatClass(attempts: number | null): string {
 function sortIndicator(key: SortKey): string {
   if (props.sortKey !== key) return ''
   return props.sortDir === 'asc' ? '▲' : '▼'
+}
+
+function onVideoClick(level: Level): void {
+  const videoId = getYoutubeVideoId(level.videoUrl)
+  if (videoId) {
+    emit('playVideo', videoId)
+  } else {
+    window.open(level.videoUrl, '_blank', 'noopener')
+  }
 }
 
 function onDelete(level: Level): void {
@@ -73,6 +84,7 @@ function onDrop(targetId: string): void {
         <th v-for="col in columns" :key="col.key" @click="emit('sort', col.key)" class="sortable">
           {{ col.label }} <span class="indicator">{{ sortIndicator(col.key) }}</span>
         </th>
+        <th class="video-col">Video</th>
         <th class="actions-col">Actions</th>
       </tr>
     </thead>
@@ -104,6 +116,26 @@ function onDrop(targetId: string): void {
               :class="{ lit: pip <= level.enjoyment }"
             ></span>
           </span>
+          <span v-else class="mono">—</span>
+        </td>
+        <td class="video-col">
+          <button
+            v-if="level.videoUrl && getYoutubeVideoId(level.videoUrl)"
+            class="video-thumb"
+            @click="onVideoClick(level)"
+            :aria-label="`Play video for ${level.name}`"
+          >
+            <img :src="`https://img.youtube.com/vi/${getYoutubeVideoId(level.videoUrl)}/mqdefault.jpg`" alt="" />
+            <span class="play-icon">&#9654;</span>
+          </button>
+          <button
+            v-else-if="level.videoUrl"
+            class="video-link"
+            @click="onVideoClick(level)"
+            :aria-label="`Open video link for ${level.name}`"
+          >
+            &#8599;
+          </button>
           <span v-else class="mono">—</span>
         </td>
         <td class="actions-col">
@@ -178,6 +210,59 @@ tbody tr.dragging {
 
 .actions-col {
   white-space: nowrap;
+}
+
+.video-col {
+  width: 4.5rem;
+  text-align: center;
+}
+
+.video-thumb {
+  position: relative;
+  width: 64px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+  background: none;
+}
+
+.video-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.video-thumb .play-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.7rem;
+  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
+  background: rgba(10, 6, 18, 0.15);
+}
+
+.video-thumb:hover .play-icon {
+  color: var(--accent-magenta);
+}
+
+.video-link {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--accent-cyan);
+  width: 28px;
+  height: 28px;
+}
+
+.video-link:hover {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 8px rgba(45, 226, 230, 0.4);
 }
 
 .actions-col .btn {
