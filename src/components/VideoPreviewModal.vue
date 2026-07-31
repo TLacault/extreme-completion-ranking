@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted } from 'vue'
+import { X } from '@lucide/vue'
 
 defineProps<{
   videoId: string
@@ -20,7 +21,9 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 <template>
   <div class="overlay" @click.self="emit('close')">
     <div class="player">
-      <button class="close-btn" @click="emit('close')" aria-label="Close video">&times;</button>
+      <button class="close-btn" @click="emit('close')" aria-label="Close video">
+        <X :size="18" />
+      </button>
       <iframe
         :src="`https://www.youtube.com/embed/${videoId}?autoplay=1`"
         title="YouTube video player"
@@ -36,11 +39,20 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 6, 18, 0.85);
+  background: rgba(6, 4, 15, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 20;
+  animation: fade-in 200ms var(--ease);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 .player {
@@ -48,9 +60,12 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   width: min(880px, 92vw);
   aspect-ratio: 16 / 9;
   background: #000;
-  border-radius: var(--radius);
+  border-radius: var(--radius-lg);
   overflow: hidden;
-  box-shadow: 0 0 40px rgba(123, 47, 247, 0.45);
+  border: 1px solid var(--border-strong);
+  box-shadow:
+    0 20px 60px -12px rgba(0, 0, 0, 0.7),
+    0 0 50px rgba(var(--glow-violet), 0.4);
 }
 
 .player iframe {
@@ -61,23 +76,25 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 .close-btn {
   position: absolute;
-  top: -0.5rem;
-  right: -0.5rem;
-  width: 2rem;
-  height: 2rem;
+  top: -0.9rem;
+  right: -0.9rem;
+  width: 2.1rem;
+  height: 2.1rem;
   border-radius: 50%;
-  background: var(--surface-raised);
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid var(--accent-magenta);
   color: var(--text);
-  font-size: 1.2rem;
-  line-height: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1;
+  transition: box-shadow 200ms var(--ease), transform 200ms var(--ease);
 }
 
 .close-btn:hover {
-  box-shadow: 0 0 12px rgba(255, 61, 154, 0.6);
+  box-shadow: 0 0 16px rgba(var(--glow-magenta), 0.6);
+  transform: scale(1.06);
 }
 </style>

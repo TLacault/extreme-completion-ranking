@@ -1,100 +1,243 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import type { SyncStatus } from '../composables/useLevels'
+import { computed, onMounted, onUnmounted, ref } from "vue";
+import {
+  ChevronDown,
+  Download,
+  RefreshCw,
+  RotateCcw,
+  Settings2,
+  Upload,
+} from "@lucide/vue";
+import type { SyncStatus } from "../composables/useLevels";
 
 const props = defineProps<{
-  lastSyncedAt: string | null
-  syncStatus: SyncStatus
-  syncError: string | null
-}>()
+  lastSyncedAt: string | null;
+  syncStatus: SyncStatus;
+  syncError: string | null;
+}>();
 
 const emit = defineEmits<{
-  export: []
-  import: [text: string]
-  reset: []
-  refreshRanks: []
-}>()
+  export: [];
+  import: [text: string];
+  reset: [];
+  refreshRanks: [];
+}>();
 
 const syncLabel = computed(() => {
-  if (props.syncStatus === 'syncing') return 'Syncing…'
-  if (props.syncStatus === 'error') return `Sync failed — will retry next visit`
-  if (!props.lastSyncedAt) return 'Never synced'
-  return `Synced ${relativeTime(props.lastSyncedAt)}`
-})
+  if (props.syncStatus === "syncing") return "Syncing…";
+  if (props.syncStatus === "error")
+    return `Sync failed — will retry next visit`;
+  if (!props.lastSyncedAt) return "Never synced";
+  return `Synced ${relativeTime(props.lastSyncedAt)}`;
+});
 
 function relativeTime(iso: string): string {
-  const diffMs = Date.now() - new Date(iso).getTime()
-  const minutes = Math.round(diffMs / 60000)
-  if (minutes < 1) return 'just now'
-  if (minutes < 60) return `${minutes}m ago`
-  const hours = Math.round(minutes / 60)
-  if (hours < 24) return `${hours}h ago`
-  const days = Math.round(hours / 24)
-  return `${days}d ago`
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.round(diffMs / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.round(hours / 24);
+  return `${days}d ago`;
 }
 
-const fileInput = ref<HTMLInputElement | null>(null)
+const fileInput = ref<HTMLInputElement | null>(null);
+const root = ref<HTMLElement | null>(null);
+const open = ref(false);
+
+function toggleMenu(): void {
+  open.value = !open.value;
+}
+
+function closeMenu(): void {
+  open.value = false;
+}
+
+function onDocClick(event: MouseEvent): void {
+  if (root.value && !root.value.contains(event.target as Node)) closeMenu();
+}
+
+function onKeydown(event: KeyboardEvent): void {
+  if (event.key === "Escape") closeMenu();
+}
+
+onMounted(() => {
+  document.addEventListener("click", onDocClick);
+  document.addEventListener("keydown", onKeydown);
+});
+
+onUnmounted(() => {
+  document.removeEventListener("click", onDocClick);
+  document.removeEventListener("keydown", onKeydown);
+});
+
+function onExportClick(): void {
+  emit("export");
+  closeMenu();
+}
 
 function triggerImport(): void {
-  fileInput.value?.click()
+  fileInput.value?.click();
+  closeMenu();
 }
 
 function onFileChange(event: Event): void {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (!file) return
-  const reader = new FileReader()
-  reader.onload = () => emit('import', String(reader.result))
-  reader.readAsText(file)
-  ;(event.target as HTMLInputElement).value = ''
+  const file = (event.target as HTMLInputElement).files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => emit("import", String(reader.result));
+  reader.readAsText(file);
+  (event.target as HTMLInputElement).value = "";
 }
 
 function onReset(): void {
-  if (confirm('Reset your list back to the original seed data? Your current entries will be lost.')) {
-    emit('reset')
+  if (
+    confirm(
+      "Reset your list back to the original seed data? Your current entries will be lost.",
+    )
+  ) {
+    emit("reset");
   }
+  closeMenu();
+}
+
+function onRefreshClick(): void {
+  emit("refreshRanks");
 }
 </script>
 
 <template>
-  <div class="toolbar">
-    <button class="btn" @click="emit('export')">Export JSON</button>
-    <button class="btn" @click="triggerImport">Import JSON</button>
-    <input ref="fileInput" type="file" accept="application/json" class="hidden-input" @change="onFileChange" />
-    <button class="btn btn-danger" @click="onReset">Reset to seed</button>
-    <div class="sync">
-      <button class="btn" :disabled="syncStatus === 'syncing'" @click="emit('refreshRanks')">Refresh ranks</button>
-      <span class="sync-label mono" :class="{ error: syncStatus === 'error' }">{{ syncLabel }}</span>
+  <div class="options-wrapper" ref="root">
+    <button class="btn" @click="toggleMenu" :aria-expanded="open">
+      <Settings2 :size="15" />
+      Options
+      <ChevronDown :size="14" class="chevron" :class="{ open }" />
+    </button>
+    <input
+      ref="fileInput"
+      type="file"
+      accept="application/json"
+      class="hidden-input"
+      @change="onFileChange"
+    />
+    <div v-if="open" class="menu glass-panel glass-strong">
+      <button class="menu-item" @click="onExportClick">
+        <Download :size="15" />
+        Export JSON
+      </button>
+      <button class="menu-item" @click="triggerImport">
+        <Upload :size="15" />
+        Import JSON
+      </button>
+      <button class="menu-item menu-item-danger" @click="onReset">
+        <RotateCcw :size="15" />
+        Reset to seed
+      </button>
+      <div class="menu-divider"></div>
+      <button
+        class="menu-item"
+        :disabled="syncStatus === 'syncing'"
+        @click="onRefreshClick"
+      >
+        <RefreshCw :size="15" :class="{ spin: syncStatus === 'syncing' }" />
+        Refresh ranks
+      </button>
+      <p class="sync-label mono" :class="{ error: syncStatus === 'error' }">
+        {{ syncLabel }}
+      </p>
     </div>
   </div>
 </template>
 
 <style scoped>
-.toolbar {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
+.options-wrapper {
+  position: relative;
+}
+
+.chevron {
+  transition: transform 200ms var(--ease);
+}
+
+.chevron.open {
+  transform: rotate(180deg);
 }
 
 .hidden-input {
   display: none;
 }
 
-.sync {
+.menu {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  right: 0;
+  width: 230px;
+  padding: 0.5rem;
+  z-index: 100;
+  animation: menu-in 160ms var(--ease);
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+}
+
+.menu-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  background: none;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: left;
+  transition: background 150ms var(--ease), color 150ms var(--ease);
+}
+
+.menu-item:hover:not(:disabled) {
+  background: rgba(var(--glow-cyan), 0.12);
+  color: var(--accent-cyan);
+}
+
+.menu-item:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.menu-item-danger:hover {
+  background: rgba(var(--glow-danger), 0.12);
+  color: #ffb3ba;
+}
+
+.menu-divider {
+  height: 1px;
+  margin: 0.4rem 0.2rem;
+  background: var(--border);
+}
+
+.spin {
+  animation: spin 900ms linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .sync-label {
-  font-size: 0.75rem;
+  margin: 0.3rem 0.2rem 0;
+  padding: 0.3rem 0.5rem;
+  font-size: 0.7rem;
   color: var(--text-muted);
 }
 
 .sync-label.error {
-  color: var(--danger);
-}
-
-.mono {
-  font-family: var(--font-mono);
+  color: #ffb3ba;
 }
 </style>

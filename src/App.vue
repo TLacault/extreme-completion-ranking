@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { Plus, Skull } from '@lucide/vue'
 import { useLevels } from './composables/useLevels'
 import type { Level } from './types'
 import LevelTable from './components/LevelTable.vue'
@@ -12,7 +13,6 @@ const {
   addLevel,
   updateLevel,
   deleteLevel,
-  reorderLevels,
   sortKey,
   sortDir,
   setSort,
@@ -75,79 +75,116 @@ function onImport(text: string): void {
 </script>
 
 <template>
-  <header class="app-header">
-    <div>
-      <p class="eyebrow">Personal completion log</p>
-      <h1>Extreme Demonlist</h1>
-    </div>
-    <div class="header-actions">
-      <button class="btn btn-primary" @click="openCreate">Add level</button>
-      <DataToolbar
-        :last-synced-at="lastSyncedAt"
-        :sync-status="syncStatus"
-        :sync-error="syncError"
-        @export="onExport"
-        @import="onImport"
-        @reset="resetToSeed"
-        @refresh-ranks="refreshRanks"
-      />
-    </div>
-  </header>
+  <div class="page">
+    <header class="app-header glass-panel">
+      <div>
+        <p class="eyebrow">Personal completion log</p>
+        <h1><Skull class="title-icon" :size="26" /><span class="title-text">Extreme Demonlist</span></h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary" @click="openCreate">
+          <Plus :size="15" />
+          Add level
+        </button>
+        <DataToolbar
+          :last-synced-at="lastSyncedAt"
+          :sync-status="syncStatus"
+          :sync-error="syncError"
+          @export="onExport"
+          @import="onImport"
+          @reset="resetToSeed"
+          @refresh-ranks="refreshRanks"
+        />
+      </div>
+    </header>
 
-  <p v-if="importError" class="import-error" role="alert">{{ importError }}</p>
+    <p v-if="importError" class="import-error glass-panel" role="alert">{{ importError }}</p>
 
-  <FilterBar :filters="filters" />
+    <FilterBar :filters="filters" />
 
-  <LevelTable
-    :levels="visibleLevels"
-    :sort-key="sortKey"
-    :sort-dir="sortDir"
-    @sort="setSort"
-    @edit="openEdit"
-    @delete="deleteLevel"
-    @reorder="reorderLevels"
-    @play-video="playingVideoId = $event"
-  />
+    <LevelTable
+      :levels="visibleLevels"
+      :sort-key="sortKey"
+      :sort-dir="sortDir"
+      @sort="setSort"
+      @edit="openEdit"
+      @delete="deleteLevel"
+      @play-video="playingVideoId = $event"
+    />
 
-  <LevelFormModal v-if="showModal" :level="editingLevel" @save="onSave" @close="showModal = false" />
-  <VideoPreviewModal v-if="playingVideoId" :video-id="playingVideoId" @close="playingVideoId = null" />
+    <LevelFormModal v-if="showModal" :level="editingLevel" @save="onSave" @close="showModal = false" />
+    <VideoPreviewModal v-if="playingVideoId" :video-id="playingVideoId" @close="playingVideoId = null" />
+  </div>
 </template>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(1rem, 3vw, 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
 .app-header {
+  position: relative;
+  z-index: 30;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  padding: 1.5rem 1.5rem 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 1.5rem 1.75rem;
 }
 
 .eyebrow {
-  margin: 0 0 0.2rem;
+  margin: 0 0 0.3rem;
   font-size: 0.75rem;
   letter-spacing: 0.15em;
   text-transform: uppercase;
   color: var(--accent-cyan);
+  text-shadow: 0 0 12px rgba(var(--glow-cyan), 0.5);
 }
 
 h1 {
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
   font-family: var(--font-display);
   font-size: 2rem;
   letter-spacing: 0.02em;
+}
+
+.title-icon {
+  color: var(--accent-magenta);
+  filter: drop-shadow(0 0 10px rgba(var(--glow-magenta), 0.6));
+  flex-shrink: 0;
+}
+
+.title-text {
+  background: linear-gradient(120deg, #ffffff, var(--accent-magenta) 60%, var(--accent-violet));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 18px rgba(var(--glow-magenta), 0.25));
 }
 
 .header-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
+  flex-wrap: wrap;
 }
 
 .import-error {
-  margin: 0 1.5rem 1rem;
-  padding: 0.6rem 1rem;
-  border: 1px solid var(--danger);
-  border-radius: var(--radius);
-  color: var(--danger);
+  margin: 0;
+  padding: 0.8rem 1.2rem;
+  border-color: rgba(var(--glow-danger), 0.5);
+  box-shadow: 0 0 20px rgba(var(--glow-danger), 0.2);
+  color: #ffb3ba;
   font-size: 0.85rem;
 }
 </style>

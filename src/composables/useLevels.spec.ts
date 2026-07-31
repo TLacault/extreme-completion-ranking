@@ -56,17 +56,6 @@ describe('useLevels — CRUD', () => {
     expect(levels.value).toHaveLength(before - 1)
     expect(levels.value.find((l) => l.id === target.id)).toBeUndefined()
   })
-
-  it('reorderLevels reassigns rank 1..N to match the given id order', () => {
-    const { levels, reorderLevels } = useLevels()
-    const ids = levels.value.map((l) => l.id)
-    const reversed = [...ids].reverse()
-    reorderLevels(reversed)
-    for (let i = 0; i < reversed.length; i++) {
-      const level = levels.value.find((l) => l.id === reversed[i])!
-      expect(level.rank).toBe(i + 1)
-    }
-  })
 })
 
 describe('useLevels — persistence', () => {
@@ -89,10 +78,10 @@ describe('useLevels — persistence', () => {
 describe('useLevels — sorting', () => {
   beforeEach(() => localStorage.clear())
 
-  it('defaults to sorting by rank ascending', () => {
+  it('defaults to sorting by AREDL rank ascending', () => {
     const { visibleLevels } = useLevels()
-    const ranks = visibleLevels.value.map((l) => l.rank)
-    expect(ranks).toEqual([...ranks].sort((a, b) => a - b))
+    const aredlRanks = visibleLevels.value.filter((l) => l.aredlRank !== null).map((l) => l.aredlRank!)
+    expect(aredlRanks).toEqual([...aredlRanks].sort((a, b) => a - b))
   })
 
   it('setSort on a new key sorts ascending by that key', () => {

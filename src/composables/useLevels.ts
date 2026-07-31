@@ -8,7 +8,7 @@ export const LAST_SYNC_KEY = 'ecr:lastSync:v1'
 
 export type SyncStatus = 'idle' | 'syncing' | 'error'
 
-export type SortKey = 'rank' | 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'name'
+export type SortKey = 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'name'
 export type SortDir = 'asc' | 'desc'
 
 export interface Filters {
@@ -17,8 +17,6 @@ export interface Filters {
   attemptsMax: number | null
   enjoymentMin: number | null
   enjoymentMax: number | null
-  rankMin: number | null
-  rankMax: number | null
   dateFrom: string | null
   dateTo: string | null
 }
@@ -116,14 +114,7 @@ export function useLevels() {
     levels.value = levels.value.filter((l) => l.id !== id)
   }
 
-  function reorderLevels(idsInOrder: string[]): void {
-    idsInOrder.forEach((id, index) => {
-      const level = levels.value.find((l) => l.id === id)
-      if (level) level.rank = index + 1
-    })
-  }
-
-  const sortKey = ref<SortKey>('rank')
+  const sortKey = ref<SortKey>('aredlRank')
   const sortDir = ref<SortDir>('asc')
 
   function setSort(key: SortKey): void {
@@ -152,8 +143,6 @@ export function useLevels() {
     attemptsMax: null,
     enjoymentMin: null,
     enjoymentMax: null,
-    rankMin: null,
-    rankMax: null,
     dateFrom: null,
     dateTo: null,
   })
@@ -165,7 +154,6 @@ export function useLevels() {
     }
     if (!inRange(level.attempts, filters.attemptsMin, filters.attemptsMax)) return false
     if (!inRange(level.enjoyment, filters.enjoymentMin, filters.enjoymentMax)) return false
-    if (!inRange(level.rank, filters.rankMin, filters.rankMax)) return false
     if (filters.dateFrom !== null || filters.dateTo !== null) {
       if (level.date === null) return false
       if (filters.dateFrom !== null && level.date < filters.dateFrom) return false
@@ -225,7 +213,6 @@ export function useLevels() {
     addLevel,
     updateLevel,
     deleteLevel,
-    reorderLevels,
     sortKey,
     sortDir,
     setSort,

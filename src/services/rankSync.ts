@@ -1,6 +1,6 @@
 import type { Level } from '../types'
 
-const AREDL_URL = 'https://api.aredl.net/v2/api/aredl/levels'
+export const AREDL_URL = 'https://api.aredl.net/v2/api/aredl/levels'
 const DL_URL = 'https://pointercrate.com/api/v2/demons/'
 
 export interface RemoteLevel {
@@ -22,34 +22,47 @@ interface RawRemoteLevel {
   name: string
 }
 
-interface RawDemon extends RawRemoteLevel {
+export interface RawAredlLevel extends RawRemoteLevel {
+  publisher_id: string
+}
+
+export interface RawDemon extends RawRemoteLevel {
   id: number
+  video: string | null
+  publisher: { id: number; name: string; banned: boolean }
 }
 
 function normalize(raw: RawRemoteLevel): RemoteLevel {
   return { levelId: raw.level_id, position: raw.position, name: raw.name }
 }
 
-export async function fetchAredlLevels(): Promise<RemoteLevel[]> {
+export async function fetchAredlRawLevels(): Promise<RawAredlLevel[]> {
   const res = await fetch(AREDL_URL)
   if (!res.ok) throw new Error(`AREDL request failed with status ${res.status}`)
-  const data = (await res.json()) as RawRemoteLevel[]
-  return data.map(normalize)
+  return (await res.json()) as RawAredlLevel[]
 }
 
-export async function fetchDlLevels(): Promise<RemoteLevel[]> {
-  const all: RemoteLevel[] = []
+export async function fetchDlRawLevels(): Promise<RawDemon[]> {
+  const all: RawDemon[] = []
   let after = 0
   for (;;) {
     const res = await fetch(`${DL_URL}?after=${after}&limit=100`)
     if (!res.ok) throw new Error(`DL request failed with status ${res.status}`)
     const page = (await res.json()) as RawDemon[]
     if (page.length === 0) break
-    all.push(...page.map(normalize))
+    all.push(...page)
     if (page.length < 100) break
     after = Math.max(...page.map((item) => item.id))
   }
   return all
+}
+
+export async function fetchAredlLevels(): Promise<RemoteLevel[]> {
+  return (await fetchAredlRawLevels()).map(normalize)
+}
+
+export async function fetchDlLevels(): Promise<RemoteLevel[]> {
+  return (await fetchDlRawLevels()).map(normalize)
 }
 
 export function matchRank(level: Pick<Level, 'levelId' | 'name'>, remote: RemoteLevel[]): number | null {

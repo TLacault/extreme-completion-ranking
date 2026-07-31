@@ -1,5 +1,23 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import {
+  Award,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Crown,
+  Flame,
+  Gamepad2,
+  Heart,
+  Medal,
+  Pencil,
+  Play,
+  Repeat,
+  Settings2,
+  SquareArrowOutUpRight,
+  Trash2,
+  Video,
+  type LucideIcon,
+} from '@lucide/vue'
 import type { Level } from '../types'
 import type { SortKey, SortDir } from '../composables/useLevels'
 import { getYoutubeVideoId } from '../utils/youtube'
@@ -14,18 +32,16 @@ const emit = defineEmits<{
   sort: [key: SortKey]
   edit: [level: Level]
   delete: [id: string]
-  reorder: [ids: string[]]
   playVideo: [videoId: string]
 }>()
 
-const columns: { key: SortKey; label: string }[] = [
-  { key: 'rank', label: 'Rank' },
-  { key: 'name', label: 'Name' },
-  { key: 'aredlRank', label: 'AREDL' },
-  { key: 'dlRank', label: 'DL' },
-  { key: 'attempts', label: 'Attempts' },
-  { key: 'date', label: 'Date' },
-  { key: 'enjoyment', label: 'Enjoyment' },
+const columns: { key: SortKey; label: string; icon: LucideIcon }[] = [
+  { key: 'name', label: 'Name', icon: Gamepad2 },
+  { key: 'aredlRank', label: 'AREDL', icon: Award },
+  { key: 'dlRank', label: 'DL', icon: Flame },
+  { key: 'attempts', label: 'Attempts', icon: Repeat },
+  { key: 'date', label: 'Date', icon: Calendar },
+  { key: 'enjoyment', label: 'Enjoyment', icon: Heart },
 ]
 
 function heatClass(attempts: number | null): string {
@@ -36,9 +52,36 @@ function heatClass(attempts: number | null): string {
   return ''
 }
 
-function sortIndicator(key: SortKey): string {
-  if (props.sortKey !== key) return ''
-  return props.sortDir === 'asc' ? '▲' : '▼'
+function sortIndicator(key: SortKey): LucideIcon | null {
+  if (props.sortKey !== key) return null
+  return props.sortDir === 'asc' ? ChevronUp : ChevronDown
+}
+
+const MEDALS: Record<number, { icon: LucideIcon; className: string }> = {
+  1: { icon: Crown, className: 'medal-gold' },
+  2: { icon: Medal, className: 'medal-silver' },
+  3: { icon: Medal, className: 'medal-bronze' },
+}
+
+function rankMedal(rank: number | null) {
+  if (rank === null) return null
+  return MEDALS[rank] ?? null
+}
+
+const VIOLET: [number, number, number] = [123, 47, 247]
+const MAGENTA: [number, number, number] = [255, 61, 154]
+const LIME: [number, number, number] = [198, 255, 61]
+
+function mixColor(c1: [number, number, number], c2: [number, number, number], t: number): string {
+  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t)
+  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t)
+  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t)
+  return `${r}, ${g}, ${b}`
+}
+
+function pipColor(pip: number): string {
+  const t = (pip - 1) / 9
+  return t <= 0.5 ? mixColor(VIOLET, MAGENTA, t / 0.5) : mixColor(MAGENTA, LIME, (t - 0.5) / 0.5)
 }
 
 function onVideoClick(level: Level): void {
@@ -56,52 +99,50 @@ function onDelete(level: Level): void {
   }
 }
 
-const draggingId = ref<string | null>(null)
-const dragEnabled = () => props.sortKey === 'rank'
-
-function onDragStart(id: string): void {
-  if (!dragEnabled()) return
-  draggingId.value = id
-}
-
-function onDrop(targetId: string): void {
-  if (!dragEnabled() || draggingId.value === null || draggingId.value === targetId) return
-  const ids = props.levels.map((l) => l.id)
-  const from = ids.indexOf(draggingId.value)
-  const to = ids.indexOf(targetId)
-  ids.splice(from, 1)
-  ids.splice(to, 0, draggingId.value)
-  draggingId.value = null
-  emit('reorder', ids)
+function onRowDblClick(event: MouseEvent, level: Level): void {
+  if ((event.target as HTMLElement).closest('button, a, input')) return
+  emit('edit', level)
 }
 </script>
 
 <template>
+  <div class="table-card glass-panel">
   <table class="level-table">
     <thead>
       <tr>
-        <th class="handle-col" v-if="sortKey === 'rank'"></th>
         <th v-for="col in columns" :key="col.key" @click="emit('sort', col.key)" class="sortable">
-          {{ col.label }} <span class="indicator">{{ sortIndicator(col.key) }}</span>
+          <span class="th-label">
+            <component :is="col.icon" :size="13" class="th-icon" />
+            {{ col.label }}
+            <component :is="sortIndicator(col.key)" v-if="sortIndicator(col.key)" :size="13" class="indicator" />
+          </span>
         </th>
-        <th class="video-col">Video</th>
-        <th class="actions-col">Actions</th>
+        <th class="video-col">
+          <span class="th-label">
+            <Video :size="13" class="th-icon" />
+            Video
+          </span>
+        </th>
+        <th class="actions-col">
+          <span class="th-label">
+            <Settings2 :size="13" class="th-icon" />
+            Actions
+          </span>
+        </th>
       </tr>
     </thead>
     <tbody>
-      <tr
-        v-for="level in levels"
-        :key="level.id"
-        :draggable="dragEnabled()"
-        @dragstart="onDragStart(level.id)"
-        @dragover.prevent
-        @drop="onDrop(level.id)"
-        :class="{ dragging: draggingId === level.id }"
-      >
-        <td class="handle-col" v-if="sortKey === 'rank'">&#8942;&#8942;</td>
-        <td class="mono">{{ level.rank }}</td>
+      <tr v-for="level in levels" :key="level.id" @dblclick="onRowDblClick($event, level)">
         <td>{{ level.name }}</td>
-        <td class="mono">{{ level.aredlRank ?? '—' }}</td>
+        <td class="mono">
+          <component
+            v-if="rankMedal(level.aredlRank)"
+            :is="rankMedal(level.aredlRank)!.icon"
+            :size="15"
+            :class="['medal-icon', rankMedal(level.aredlRank)!.className]"
+          />
+          {{ level.aredlRank ?? '—' }}
+        </td>
         <td class="mono">{{ level.dlRank ?? '—' }}</td>
         <td class="mono" :class="heatClass(level.attempts)">
           {{ level.attempts !== null ? level.attempts.toLocaleString() : level.attemptsNote || '—' }}
@@ -114,6 +155,7 @@ function onDrop(targetId: string): void {
               :key="pip"
               class="pip"
               :class="{ lit: pip <= level.enjoyment }"
+              :style="pip <= level.enjoyment ? { background: `rgb(${pipColor(pip)})`, boxShadow: `0 0 4px rgba(${pipColor(pip)}, 0.7)` } : {}"
             ></span>
           </span>
           <span v-else class="mono">—</span>
@@ -126,7 +168,7 @@ function onDrop(targetId: string): void {
             :aria-label="`Play video for ${level.name}`"
           >
             <img :src="`https://img.youtube.com/vi/${getYoutubeVideoId(level.videoUrl)}/mqdefault.jpg`" alt="" />
-            <span class="play-icon">&#9654;</span>
+            <span class="play-icon"><Play :size="14" fill="currentColor" /></span>
           </button>
           <button
             v-else-if="level.videoUrl"
@@ -134,54 +176,117 @@ function onDrop(targetId: string): void {
             @click="onVideoClick(level)"
             :aria-label="`Open video link for ${level.name}`"
           >
-            &#8599;
+            <SquareArrowOutUpRight :size="14" />
           </button>
           <span v-else class="mono">—</span>
         </td>
         <td class="actions-col">
-          <button class="btn" @click="emit('edit', level)">Edit</button>
-          <button class="btn btn-danger" @click="onDelete(level)">Delete</button>
+          <button class="icon-btn" @click="emit('edit', level)" :aria-label="`Edit ${level.name}`" title="Edit">
+            <Pencil :size="15" />
+          </button>
+          <button class="icon-btn icon-btn-danger" @click="onDelete(level)" :aria-label="`Delete ${level.name}`" title="Delete">
+            <Trash2 :size="15" />
+          </button>
         </td>
       </tr>
     </tbody>
   </table>
+  </div>
 </template>
 
 <style scoped>
+.table-card {
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
 .level-table {
   width: 100%;
-  border-collapse: collapse;
-  background: var(--surface);
-  border-radius: var(--radius);
-  overflow: hidden;
+  border-collapse: separate;
+  border-spacing: 0;
 }
 
 th,
 td {
-  padding: 0.6rem 0.8rem;
-  border-bottom: 1px solid var(--border);
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   text-align: left;
   font-size: 0.85rem;
+  white-space: nowrap;
+}
+
+th:first-child,
+td:first-child {
+  padding-left: 1.25rem;
+}
+
+th:last-child,
+td:last-child {
+  padding-right: 1.25rem;
+}
+
+thead th:first-child {
+  border-top-left-radius: var(--radius-lg);
+}
+
+thead th:last-child {
+  border-top-right-radius: var(--radius-lg);
+}
+
+tbody tr:last-child td:first-child {
+  border-bottom-left-radius: var(--radius-lg);
+}
+
+tbody tr:last-child td:last-child {
+  border-bottom-right-radius: var(--radius-lg);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1;
 }
 
 th {
   font-family: var(--font-body);
   font-weight: 600;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   color: var(--text-muted);
   user-select: none;
 }
 
+.th-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.th-icon {
+  opacity: 0.7;
+}
+
 th.sortable {
   cursor: pointer;
+  transition: color 200ms var(--ease);
 }
 
 th.sortable:hover {
   color: var(--accent-cyan);
+  text-shadow: 0 0 10px rgba(var(--glow-cyan), 0.5);
 }
 
 .indicator {
   color: var(--accent-magenta);
-  font-size: 0.7em;
 }
 
 .mono {
@@ -189,23 +294,35 @@ th.sortable:hover {
   font-variant-numeric: tabular-nums;
 }
 
+.medal-icon {
+  vertical-align: -2px;
+  margin-right: 0.3rem;
+}
+
+.medal-gold {
+  color: #ffd75e;
+  filter: drop-shadow(0 0 6px rgba(255, 215, 94, 0.7));
+}
+
+.medal-silver {
+  color: #d8d8e2;
+  filter: drop-shadow(0 0 6px rgba(216, 216, 226, 0.55));
+}
+
+.medal-bronze {
+  color: #e0985a;
+  filter: drop-shadow(0 0 6px rgba(224, 152, 90, 0.6));
+}
+
 tbody tr {
-  transition: box-shadow 150ms ease, transform 150ms ease;
+  transition: background 200ms var(--ease), box-shadow 200ms var(--ease), transform 200ms var(--ease);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
 }
 
 tbody tr:hover {
-  box-shadow: inset 0 0 0 1px var(--accent-magenta);
-}
-
-tbody tr.dragging {
-  opacity: 0.4;
-}
-
-.handle-col {
-  width: 1.5rem;
-  color: var(--text-muted);
-  cursor: grab;
-  letter-spacing: -2px;
+  background: rgba(255, 255, 255, 0.045);
+  box-shadow: inset 0 0 0 1px rgba(var(--glow-magenta), 0.4), 0 0 24px -8px rgba(var(--glow-magenta), 0.35);
 }
 
 .actions-col {
@@ -223,9 +340,15 @@ tbody tr.dragging {
   height: 36px;
   padding: 0;
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: none;
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+
+.video-thumb:hover {
+  border-color: var(--accent-magenta);
+  box-shadow: 0 0 14px rgba(var(--glow-magenta), 0.45);
 }
 
 .video-thumb img {
@@ -242,7 +365,6 @@ tbody tr.dragging {
   align-items: center;
   justify-content: center;
   color: #fff;
-  font-size: 0.7rem;
   text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
   background: rgba(10, 6, 18, 0.15);
 }
@@ -252,23 +374,48 @@ tbody tr.dragging {
 }
 
 .video-link {
-  background: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   color: var(--accent-cyan);
   width: 28px;
   height: 28px;
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
 }
 
 .video-link:hover {
   border-color: var(--accent-cyan);
-  box-shadow: 0 0 8px rgba(45, 226, 230, 0.4);
+  box-shadow: 0 0 12px rgba(var(--glow-cyan), 0.45);
 }
 
-.actions-col .btn {
-  padding: 0.3rem 0.6rem;
-  font-size: 0.75rem;
-  margin-right: 0.3rem;
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  margin-right: 0.35rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease), color 200ms var(--ease);
+}
+
+.icon-btn:hover {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(var(--glow-cyan), 0.4);
+}
+
+.icon-btn-danger:hover {
+  color: var(--danger);
+  border-color: rgba(var(--glow-danger), 0.6);
+  box-shadow: 0 0 12px rgba(var(--glow-danger), 0.4);
 }
 
 .heat-1 {
@@ -306,10 +453,5 @@ tbody tr.dragging {
   height: 12px;
   border-radius: 2px;
   background: var(--border);
-}
-
-.pip.lit {
-  background: var(--accent-lime);
-  box-shadow: 0 0 4px rgba(198, 255, 61, 0.6);
 }
 </style>
