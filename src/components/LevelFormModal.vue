@@ -202,8 +202,7 @@ function confirmHighlighted(): void {
               v-for="option in STATUS_OPTIONS"
               :key="option.value"
               type="button"
-              class="status-btn"
-              :class="{ active: form.status === option.value }"
+              :class="['status-btn', `status-btn-${option.value}`, { active: form.status === option.value }]"
               @click="onStatusChange(option.value)"
             >
               <component :is="option.icon" :size="14" />
@@ -435,11 +434,28 @@ textarea {
 }
 
 .status-btn.active {
-  color: #0a0612;
-  background: linear-gradient(120deg, var(--accent-cyan), var(--accent-lime));
-  border-color: transparent;
   font-weight: 600;
-  box-shadow: 0 0 14px rgba(var(--glow-cyan), 0.4);
+}
+
+.status-btn-completed.active {
+  color: #34d399;
+  background: rgba(52, 211, 153, 0.14);
+  border-color: rgba(52, 211, 153, 0.4);
+  box-shadow: 0 0 10px rgba(52, 211, 153, 0.3);
+}
+
+.status-btn-in_progress.active {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.14);
+  border-color: rgba(251, 191, 36, 0.4);
+  box-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
+}
+
+.status-btn-planned.active {
+  color: #c4b5fd;
+  background: rgba(196, 181, 253, 0.12);
+  border-color: rgba(196, 181, 253, 0.4);
+  box-shadow: 0 0 10px rgba(196, 181, 253, 0.25);
 }
 
 .name-field {

@@ -4,11 +4,26 @@ import { refreshRanks as syncRanks } from '../services/rankSync'
 
 export const STORAGE_KEY = 'ecr:levels:v1'
 export const LAST_SYNC_KEY = 'ecr:lastSync:v1'
+export const COLUMNS_KEY = 'ecr:columns:v1'
 
 export type SyncStatus = 'idle' | 'syncing' | 'error'
 
 export type SortKey = 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'name'
 export type SortDir = 'asc' | 'desc'
+
+export type ColumnKey = 'status' | 'aredlRank' | 'dlRank' | 'attempts' | 'date' | 'enjoyment' | 'bestRun' | 'video'
+export type ColumnVisibility = Record<ColumnKey, boolean>
+
+export const DEFAULT_COLUMN_VISIBILITY: ColumnVisibility = {
+  status: true,
+  aredlRank: true,
+  dlRank: true,
+  attempts: true,
+  date: true,
+  enjoyment: true,
+  bestRun: true,
+  video: true,
+}
 
 export interface Filters {
   search: string
@@ -102,6 +117,20 @@ function loadInitialLevels(): Level[] {
   return []
 }
 
+function loadInitialColumnVisibility(): ColumnVisibility {
+  const raw = localStorage.getItem(COLUMNS_KEY)
+  if (!raw) return { ...DEFAULT_COLUMN_VISIBILITY }
+  try {
+    const parsed = JSON.parse(raw)
+    if (typeof parsed === 'object' && parsed !== null) {
+      return { ...DEFAULT_COLUMN_VISIBILITY, ...parsed }
+    }
+  } catch {
+    // fall through to defaults on corrupt storage
+  }
+  return { ...DEFAULT_COLUMN_VISIBILITY }
+}
+
 export function useLevels() {
   const levels: Ref<Level[]> = ref(loadInitialLevels())
 
@@ -178,6 +207,14 @@ export function useLevels() {
 
   const visibleLevels = computed(() => levels.value.filter(matchesFilters).sort(compareLevels))
 
+  const columnVisibility = reactive<ColumnVisibility>(loadInitialColumnVisibility())
+
+  watch(
+    columnVisibility,
+    (data) => localStorage.setItem(COLUMNS_KEY, JSON.stringify(data)),
+    { deep: true },
+  )
+
   function exportJson(): string {
     return JSON.stringify(levels.value, null, 2)
   }
@@ -232,6 +269,7 @@ export function useLevels() {
     setSort,
     filters,
     visibleLevels,
+    columnVisibility,
     exportJson,
     importJson,
     clearAllData,

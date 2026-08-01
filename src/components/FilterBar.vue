@@ -1,22 +1,29 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import {
+  Award,
   Calendar,
   ChevronDown,
   CircleCheck,
+  Columns3,
+  Flame,
   Heart,
   Hourglass,
   ListTodo,
   Repeat,
   Search,
+  Settings2,
   SlidersHorizontal,
+  Target,
+  Video,
   type LucideIcon,
 } from "@lucide/vue";
-import type { Filters } from "../composables/useLevels";
+import type { ColumnKey, ColumnVisibility, Filters } from "../composables/useLevels";
 import type { LevelStatus } from "../types";
 
 const props = defineProps<{
   filters: Filters;
+  columnVisibility: ColumnVisibility;
 }>();
 
 function toNullableNumber(value: string): number | null {
@@ -27,6 +34,17 @@ const STATUS_TOGGLES: { value: LevelStatus; label: string; icon: LucideIcon }[] 
   { value: "completed", label: "Completed", icon: CircleCheck },
   { value: "in_progress", label: "Current", icon: Hourglass },
   { value: "planned", label: "Plan", icon: ListTodo },
+];
+
+const COLUMN_TOGGLES: { key: ColumnKey; label: string; icon: LucideIcon }[] = [
+  { key: "status", label: "Status", icon: CircleCheck },
+  { key: "aredlRank", label: "AREDL", icon: Award },
+  { key: "dlRank", label: "DL", icon: Flame },
+  { key: "attempts", label: "Attempts", icon: Repeat },
+  { key: "date", label: "Date", icon: Calendar },
+  { key: "enjoyment", label: "Enjoyment", icon: Heart },
+  { key: "bestRun", label: "Best Run", icon: Target },
+  { key: "video", label: "Video", icon: Video },
 ];
 
 const expanded = ref(true);
@@ -50,8 +68,8 @@ const activeFilterCount = computed(() => {
       @click="expanded = !expanded"
       :aria-expanded="expanded"
     >
-      <SlidersHorizontal :size="15" />
-      <span>Filters</span>
+      <Settings2 :size="15" />
+      <span>Options</span>
       <span v-if="activeFilterCount > 0" class="filter-badge mono">{{
         activeFilterCount
       }}</span>
@@ -68,6 +86,21 @@ const activeFilterCount = computed(() => {
               type="button"
               :class="['toggle-chip', `toggle-${option.value}`, { active: filters.statuses[option.value] }]"
               @click="filters.statuses[option.value] = !filters.statuses[option.value]"
+            >
+              <component :is="option.icon" :size="13" />
+              {{ option.label }}
+            </button>
+          </div>
+        </div>
+        <div class="status-field">
+          <span class="field-label"><Columns3 :size="12" /> Columns</span>
+          <div class="toggle-row">
+            <button
+              v-for="option in COLUMN_TOGGLES"
+              :key="option.key"
+              type="button"
+              :class="['toggle-chip', 'toggle-column', { active: columnVisibility[option.key] }]"
+              @click="columnVisibility[option.key] = !columnVisibility[option.key]"
             >
               <component :is="option.icon" :size="13" />
               {{ option.label }}
@@ -246,6 +279,7 @@ const activeFilterCount = computed(() => {
 
 .toggle-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.4rem;
 }
 
@@ -296,6 +330,13 @@ const activeFilterCount = computed(() => {
   background: rgba(196, 181, 253, 0.12);
   border-color: rgba(196, 181, 253, 0.4);
   box-shadow: 0 0 10px rgba(196, 181, 253, 0.25);
+}
+
+.toggle-chip.toggle-column.active {
+  color: var(--accent-cyan);
+  background: rgba(var(--glow-cyan), 0.14);
+  border-color: rgba(var(--glow-cyan), 0.4);
+  box-shadow: 0 0 10px rgba(var(--glow-cyan), 0.3);
 }
 
 .range-inputs {

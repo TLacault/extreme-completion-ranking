@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { Plus, Skull } from '@lucide/vue'
 import { useLevels } from './composables/useLevels'
 import type { Level } from './types'
@@ -18,6 +18,7 @@ const {
   setSort,
   filters,
   visibleLevels,
+  columnVisibility,
   exportJson,
   importJson,
   clearAllData,
@@ -26,8 +27,6 @@ const {
   syncError,
   refreshRanks,
 } = useLevels()
-
-const showStatusColumn = computed(() => Object.values(filters.statuses).filter(Boolean).length > 1)
 
 const editingLevel = ref<Level | null>(null)
 const showModal = ref(false)
@@ -102,13 +101,13 @@ function onImport(text: string): void {
 
     <p v-if="importError" class="import-error glass-panel" role="alert">{{ importError }}</p>
 
-    <FilterBar :filters="filters" />
+    <FilterBar :filters="filters" :column-visibility="columnVisibility" />
 
     <LevelTable
       :levels="visibleLevels"
       :sort-key="sortKey"
       :sort-dir="sortDir"
-      :show-status-column="showStatusColumn"
+      :column-visibility="columnVisibility"
       @sort="setSort"
       @edit="openEdit"
       @delete="deleteLevel"

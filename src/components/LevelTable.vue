@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import {
   Award,
   Calendar,
@@ -24,14 +25,14 @@ import {
   type LucideIcon,
 } from "@lucide/vue";
 import type { Level, LevelStatus } from "../types";
-import { bestRunRange, levelStatus, type SortKey, type SortDir } from "../composables/useLevels";
+import { bestRunRange, levelStatus, type ColumnKey, type ColumnVisibility, type SortKey, type SortDir } from "../composables/useLevels";
 import { getYoutubeVideoId } from "../utils/youtube";
 
 const props = defineProps<{
   levels: Level[];
   sortKey: SortKey;
   sortDir: SortDir;
-  showStatusColumn: boolean;
+  columnVisibility: ColumnVisibility;
 }>();
 
 const emit = defineEmits<{
@@ -49,6 +50,20 @@ const columns: { key: SortKey; label: string; icon: LucideIcon }[] = [
   { key: "date", label: "Date", icon: Calendar },
   { key: "enjoyment", label: "Enjoyment", icon: Heart },
 ];
+
+const visibleColumns = computed(() =>
+  columns.filter((col) => col.key === "name" || props.columnVisibility[col.key as ColumnKey]),
+);
+
+const visibleColumnCount = computed(
+  () =>
+    1 + // rank
+    (props.columnVisibility.status ? 1 : 0) +
+    visibleColumns.value.length +
+    (props.columnVisibility.bestRun ? 1 : 0) +
+    (props.columnVisibility.video ? 1 : 0) +
+    1, // actions
+);
 
 function heatClass(attempts: number | null): string {
   if (attempts === null) return "";
@@ -150,14 +165,14 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
               RANK
             </span>
           </th>
-          <th v-if="showStatusColumn" class="status-col">
+          <th v-if="columnVisibility.status" class="status-col">
             <span class="th-label">
               <CircleCheck :size="13" class="th-icon" />
               Status
             </span>
           </th>
           <th
-            v-for="col in columns"
+            v-for="col in visibleColumns"
             :key="col.key"
             @click="emit('sort', col.key)"
             class="sortable"
@@ -173,13 +188,13 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
               />
             </span>
           </th>
-          <th class="bestrun-col">
+          <th v-if="columnVisibility.bestRun" class="bestrun-col">
             <span class="th-label">
               <Target :size="13" class="th-icon" />
               Best Run
             </span>
           </th>
-          <th class="video-col">
+          <th v-if="columnVisibility.video" class="video-col">
             <span class="th-label">
               <Video :size="13" class="th-icon" />
               Video
@@ -195,7 +210,7 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
       </thead>
       <tbody>
         <tr v-if="levels.length === 0" class="empty-row">
-          <td :colspan="columns.length + 4 + (showStatusColumn ? 1 : 0)" class="empty-state">
+          <td :colspan="visibleColumnCount" class="empty-state">
             No levels yet — click "Add level" to start your list.
           </td>
         </tr>
@@ -213,15 +228,15 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
             />
             {{ index + 1 }}
           </td>
-          <td v-if="showStatusColumn" class="status-col">
+          <td v-if="columnVisibility.status" class="status-col">
             <span :class="['status-badge', statusBadge(level).className]">
               <component :is="statusBadge(level).icon" :size="12" />
               {{ statusBadge(level).label }}
             </span>
           </td>
           <td>{{ level.name }}</td>
-          <td class="mono">{{ level.aredlRank ?? "—" }}</td>
-          <td class="mono">
+          <td v-if="columnVisibility.aredlRank" class="mono">{{ level.aredlRank ?? "—" }}</td>
+          <td v-if="columnVisibility.dlRank" class="mono">
             {{ level.dlRank ?? "—" }}
             <span
               v-if="listBadge(level.dlRank)"
@@ -230,15 +245,15 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
               {{ listBadge(level.dlRank)!.label }}
             </span>
           </td>
-          <td class="mono" :class="heatClass(level.attempts)">
+          <td v-if="columnVisibility.attempts" class="mono" :class="heatClass(level.attempts)">
             {{
               level.attempts !== null
                 ? level.attempts.toLocaleString()
                 : level.attemptsNote || "—"
             }}
           </td>
-          <td class="mono">{{ level.date ?? (level.dateNote || "—") }}</td>
-          <td>
+          <td v-if="columnVisibility.date" class="mono">{{ level.date ?? (level.dateNote || "—") }}</td>
+          <td v-if="columnVisibility.enjoyment">
             <span class="enjoyment-meter" v-if="level.enjoyment !== null">
               <span
                 v-for="pip in 10"
@@ -257,8 +272,8 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
             </span>
             <span v-else class="mono">—</span>
           </td>
-          <td class="mono bestrun-col">{{ bestRunLabel(level) }}</td>
-          <td class="video-col">
+          <td v-if="columnVisibility.bestRun" class="mono bestrun-col">{{ bestRunLabel(level) }}</td>
+          <td v-if="columnVisibility.video" class="video-col">
             <button
               v-if="level.videoUrl && getYoutubeVideoId(level.videoUrl)"
               class="video-thumb"
