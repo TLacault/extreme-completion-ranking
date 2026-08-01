@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { Plus, Skull } from '@lucide/vue'
 import { useLevels } from './composables/useLevels'
 import type { Level } from './types'
@@ -20,12 +20,14 @@ const {
   visibleLevels,
   exportJson,
   importJson,
-  resetToSeed,
+  clearAllData,
   lastSyncedAt,
   syncStatus,
   syncError,
   refreshRanks,
 } = useLevels()
+
+const showStatusColumn = computed(() => Object.values(filters.statuses).filter(Boolean).length > 1)
 
 const editingLevel = ref<Level | null>(null)
 const showModal = ref(false)
@@ -92,7 +94,7 @@ function onImport(text: string): void {
           :sync-error="syncError"
           @export="onExport"
           @import="onImport"
-          @reset="resetToSeed"
+          @clear-all="clearAllData"
           @refresh-ranks="refreshRanks"
         />
       </div>
@@ -106,6 +108,7 @@ function onImport(text: string): void {
       :levels="visibleLevels"
       :sort-key="sortKey"
       :sort-dir="sortDir"
+      :show-status-column="showStatusColumn"
       @sort="setSort"
       @edit="openEdit"
       @delete="deleteLevel"

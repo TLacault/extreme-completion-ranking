@@ -45,7 +45,7 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 20;
+  z-index: 41;
   animation: fade-in 200ms var(--ease);
 }
 

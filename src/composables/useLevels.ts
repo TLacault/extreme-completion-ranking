@@ -1,6 +1,5 @@
 import { ref, watch, computed, reactive, type Ref } from 'vue'
-import type { Level } from '../types'
-import { seedLevels } from '../data/seedLevels'
+import type { Level, LevelStatus } from '../types'
 import { refreshRanks as syncRanks } from '../services/rankSync'
 
 export const STORAGE_KEY = 'ecr:levels:v1'
@@ -19,6 +18,7 @@ export interface Filters {
   enjoymentMax: number | null
   dateFrom: string | null
   dateTo: string | null
+  statuses: Record<LevelStatus, boolean>
 }
 
 function inRange(value: number | null, min: number | null, max: number | null): boolean {
@@ -38,8 +38,11 @@ const LEVEL_FIELD_TYPES: Record<keyof Level, 'string' | 'number' | 'nullable-str
   id: 'string',
   rank: 'number',
   name: 'string',
+  status: 'string',
   aredlRank: 'nullable-number',
   dlRank: 'nullable-number',
+  bestRunMin: 'nullable-number',
+  bestRunMax: 'nullable-number',
   attempts: 'nullable-number',
   attemptsNote: 'string',
   date: 'nullable-string',
@@ -66,6 +69,15 @@ function validateLevel(item: unknown, index: number): string | null {
   return null
 }
 
+export function levelStatus(level: Level): LevelStatus {
+  return level.status ?? 'completed'
+}
+
+export function bestRunRange(level: Level): { min: number; max: number } {
+  if (levelStatus(level) === 'completed') return { min: 0, max: 100 }
+  return { min: level.bestRunMin ?? 0, max: level.bestRunMax ?? 0 }
+}
+
 function generateId(): string {
   return `lvl_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 9)}`
 }
@@ -80,14 +92,14 @@ function debounce<T extends (...args: never[]) => void>(fn: T, wait: number) {
 
 function loadInitialLevels(): Level[] {
   const raw = localStorage.getItem(STORAGE_KEY)
-  if (!raw) return structuredClone(seedLevels)
+  if (!raw) return []
   try {
     const parsed = JSON.parse(raw)
     if (Array.isArray(parsed)) return parsed as Level[]
   } catch {
-    // fall through to seed data on corrupt storage
+    // fall through to an empty list on corrupt storage
   }
-  return structuredClone(seedLevels)
+  return []
 }
 
 export function useLevels() {
@@ -145,9 +157,11 @@ export function useLevels() {
     enjoymentMax: null,
     dateFrom: null,
     dateTo: null,
+    statuses: { completed: true, in_progress: true, planned: true },
   })
 
   function matchesFilters(level: Level): boolean {
+    if (!filters.statuses[levelStatus(level)]) return false
     const search = filters.search.trim().toLowerCase()
     if (search && !level.name.toLowerCase().includes(search) && !level.creator.toLowerCase().includes(search)) {
       return false
@@ -186,8 +200,8 @@ export function useLevels() {
     return { ok: true }
   }
 
-  function resetToSeed(): void {
-    levels.value = structuredClone(seedLevels)
+  function clearAllData(): void {
+    levels.value = []
   }
 
   const lastSyncedAt = ref<string | null>(localStorage.getItem(LAST_SYNC_KEY))
@@ -220,7 +234,7 @@ export function useLevels() {
     visibleLevels,
     exportJson,
     importJson,
-    resetToSeed,
+    clearAllData,
     lastSyncedAt,
     syncStatus,
     syncError,

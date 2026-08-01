@@ -4,8 +4,8 @@ import {
   ChevronDown,
   Download,
   RefreshCw,
-  RotateCcw,
   Settings2,
+  Trash2,
   Upload,
 } from "@lucide/vue";
 import type { SyncStatus } from "../composables/useLevels";
@@ -19,7 +19,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   export: [];
   import: [text: string];
-  reset: [];
+  clearAll: [];
   refreshRanks: [];
 }>();
 
@@ -91,13 +91,13 @@ function onFileChange(event: Event): void {
   (event.target as HTMLInputElement).value = "";
 }
 
-function onReset(): void {
+function onClearAll(): void {
   if (
     confirm(
-      "Reset your list back to the original seed data? Your current entries will be lost.",
+      "Permanently delete all levels in your list? This cannot be undone.",
     )
   ) {
-    emit("reset");
+    emit("clearAll");
   }
   closeMenu();
 }
@@ -130,9 +130,9 @@ function onRefreshClick(): void {
         <Upload :size="15" />
         Import JSON
       </button>
-      <button class="menu-item menu-item-danger" @click="onReset">
-        <RotateCcw :size="15" />
-        Reset to seed
+      <button class="menu-item menu-item-danger" @click="onClearAll">
+        <Trash2 :size="15" />
+        Clear all data
       </button>
       <div class="menu-divider"></div>
       <button
@@ -174,6 +174,10 @@ function onRefreshClick(): void {
   width: 230px;
   padding: 0.5rem;
   z-index: 100;
+  background: linear-gradient(155deg, rgba(20, 14, 32, 0.52), rgba(20, 14, 32, 0.4));
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
   animation: menu-in 160ms var(--ease);
 }
 

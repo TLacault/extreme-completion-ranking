@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { LoaderCircle, Pencil, Plus, Search, X } from '@lucide/vue'
-import type { Level } from '../types'
+import { CircleCheck, Hourglass, ListTodo, LoaderCircle, Pencil, Plus, Search, X, type LucideIcon } from '@lucide/vue'
+import type { Level, LevelStatus } from '../types'
 import { fetchAredlEnrichment, searchLevels, type LookupEntry } from '../services/levelLookup'
+import DualRangeSlider from './DualRangeSlider.vue'
 
 const props = defineProps<{
   level: Level | null
+  defaultStatus?: LevelStatus
 }>()
 
 const emit = defineEmits<{
@@ -13,14 +15,24 @@ const emit = defineEmits<{
   close: []
 }>()
 
+const STATUS_OPTIONS: { value: LevelStatus; label: string; icon: LucideIcon }[] = [
+  { value: 'completed', label: 'Completed', icon: CircleCheck },
+  { value: 'in_progress', label: 'Currently completing', icon: Hourglass },
+  { value: 'planned', label: 'Plan on completing', icon: ListTodo },
+]
+
 function blankForm(): Omit<Level, 'id' | 'rank'> {
+  const status = props.defaultStatus ?? 'completed'
   return {
     name: '',
+    status,
     aredlRank: null,
     dlRank: null,
+    bestRunMin: status === 'completed' ? 0 : null,
+    bestRunMax: status === 'completed' ? 100 : null,
     attempts: null,
     attemptsNote: '',
-    date: null,
+    date: new Date().toISOString().slice(0, 10),
     dateNote: '',
     enjoyment: null,
     creator: '',
@@ -30,18 +42,30 @@ function blankForm(): Omit<Level, 'id' | 'rank'> {
   }
 }
 
-const form = reactive(props.level ? { ...props.level } : blankForm())
+const form = reactive(props.level ? { ...props.level, status: props.level.status ?? 'completed' } : blankForm())
 const titleIcon = computed(() => (props.level ? Pencil : Plus))
 
 watch(
   () => props.level,
   (level) => {
-    Object.assign(form, level ? { ...level } : blankForm())
+    Object.assign(form, level ? { ...level, status: level.status ?? 'completed' } : blankForm())
   },
 )
 
 function toNullableNumber(value: string): number | null {
   return value === '' ? null : Number(value)
+}
+
+function onStatusChange(status: LevelStatus): void {
+  const wasCompleted = form.status === 'completed'
+  form.status = status
+  if (status === 'completed') {
+    form.bestRunMin = 0
+    form.bestRunMax = 100
+  } else if (wasCompleted) {
+    form.bestRunMin = null
+    form.bestRunMax = null
+  }
 }
 
 function onSubmit(): void {
@@ -51,7 +75,7 @@ function onSubmit(): void {
 }
 
 function onOverlayClick(): void {
-  if (props.level) {
+  if (form.name.trim()) {
     onSubmit()
   } else {
     emit('close')
@@ -172,6 +196,26 @@ function confirmHighlighted(): void {
           </ul>
         </label>
         <label>
+          Status
+          <div class="status-row">
+            <button
+              v-for="option in STATUS_OPTIONS"
+              :key="option.value"
+              type="button"
+              class="status-btn"
+              :class="{ active: form.status === option.value }"
+              @click="onStatusChange(option.value)"
+            >
+              <component :is="option.icon" :size="14" />
+              {{ option.label }}
+            </button>
+          </div>
+        </label>
+        <label v-if="form.status !== 'completed'">
+          Best run (%)
+          <DualRangeSlider v-model:min-value="form.bestRunMin" v-model:max-value="form.bestRunMax" />
+        </label>
+        <label>
           Creator
           <input v-model="form.creator" type="text" />
         </label>
@@ -270,7 +314,7 @@ function confirmHighlighted(): void {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10;
+  z-index: 40;
   animation: fade-in 200ms var(--ease);
 }
 
@@ -284,6 +328,24 @@ function confirmHighlighted(): void {
     0 0 40px rgba(var(--glow-violet), 0.3),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
   animation: modal-in 260ms var(--ease);
+}
+
+.modal::-webkit-scrollbar {
+  width: 8px;
+}
+
+.modal::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 10% 0;
+}
+
+.modal::-webkit-scrollbar-thumb {
+  background: rgba(var(--glow-violet), 0.5);
+  border-radius: 999px;
+}
+
+.modal::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--glow-magenta), 0.55);
 }
 
 @keyframes fade-in {
@@ -338,10 +400,46 @@ textarea {
   color: var(--text);
 }
 
+textarea {
+  resize: vertical;
+}
+
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.8rem;
+}
+
+.status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.status-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  transition: border-color 200ms var(--ease), color 200ms var(--ease), background 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+
+.status-btn:hover {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+.status-btn.active {
+  color: #0a0612;
+  background: linear-gradient(120deg, var(--accent-cyan), var(--accent-lime));
+  border-color: transparent;
+  font-weight: 600;
+  box-shadow: 0 0 14px rgba(var(--glow-cyan), 0.4);
 }
 
 .name-field {
@@ -394,6 +492,11 @@ textarea {
   margin: 0;
   list-style: none;
   z-index: 5;
+  background: linear-gradient(155deg, rgba(28, 18, 44, 0.92), rgba(20, 13, 32, 0.88));
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
 }
 
 .suggestions li {
