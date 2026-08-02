@@ -1,24 +1,24 @@
 <div align="center">
 
-# 💀 Extreme Demonlist
+# 💀 Extreme Tracker
 
 ### A neon-soaked completion tracker for Geometry Dash's hardest levels
 
-[![Deploy](https://github.com/TLacault/extreme-completion-ranking/actions/workflows/deploy.yml/badge.svg)](https://github.com/TLacault/extreme-completion-ranking/actions/workflows/deploy.yml)
+[![Deploy](https://github.com/TLacault/extreme-tracker/actions/workflows/deploy.yml/badge.svg)](https://github.com/TLacault/extreme-tracker/actions/workflows/deploy.yml)
 ![Vue 3](https://img.shields.io/badge/Vue-3.5-42b883?logo=vue.js&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white)
 ![Vite](https://img.shields.io/badge/Vite-6-646cff?logo=vite&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-49%20passing-34d399)
 ![Backend](https://img.shields.io/badge/backend-none%20·%20localStorage-c4b5fd)
 
-## **[▶ LIVE APP](https://tlacault.github.io/extreme-completion-ranking/)**
+## **[▶ LIVE APP](https://tlacault.github.io/extreme-tracker/)**
 
-![Extreme Demonlist screenshot](.github/screenshots/hero.png)
+![Extreme Tracker screenshot](.github/screenshots/hero.png)
 
 </div>
 
 
-Extreme Demonlist is a personal completion log for Geometry Dash extreme demons — the levels that separate the mortals from the legends. Track what you've beaten, what you're grinding, and what you're too scared to start, with live AREDL/DL rank sync, a searchable add-level flow that autofills itself, and a dark, glowing UI that actually looks like it belongs on a demon list.
+Extreme Tracker is a personal completion log for Geometry Dash extreme demons — the levels that separate the mortals from the legends. Track what you've beaten, what you're grinding, and what you're too scared to start, with live AREDL/DL rank sync, a searchable add-level flow that autofills itself, and a dark, glowing UI that actually looks like it belongs on a demon list.
 
 Everything runs client-side. No account, no backend, no tracking — your data lives in your browser and travels with you via one-click JSON export/import.
 

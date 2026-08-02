@@ -65,7 +65,7 @@ function onExport(): void {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = 'extreme-demonlist.json'
+  a.download = 'extreme-tracker.json'
   a.click()
   URL.revokeObjectURL(url)
 }
@@ -81,7 +81,7 @@ function onImport(text: string): void {
     <header class="app-header glass-panel">
       <div>
         <p class="eyebrow">Personal completion log</p>
-        <h1><Skull class="title-icon" :size="26" /><span class="title-text">Extreme Demonlist</span></h1>
+        <h1><Skull class="title-icon" :size="26" /><span class="title-text">Extreme Tracker</span></h1>
       </div>
       <div class="header-actions">
         <button class="btn btn-primary" @click="openCreate">
