@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { fetchFeaturedYoutube, fetchGdStats, GD_ACCOUNT } from './featuredCreator'
+import { fetchFeaturedYoutube, fetchAredlStats, AREDL_ACCOUNT } from './featuredCreator'
 
 function jsonResponse(body: unknown, ok = true): Response {
   return { ok, json: async () => body } as Response
@@ -26,7 +26,7 @@ describe('fetchFeaturedYoutube', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('resolves channel info then the latest video', async () => {
+  it('resolves channel info, stats, and the latest video', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce(
@@ -35,6 +35,7 @@ describe('fetchFeaturedYoutube', () => {
             {
               snippet: { title: 'Stark [GD]', thumbnails: { medium: { url: 'https://example.com/avatar.jpg' } } },
               contentDetails: { relatedPlaylists: { uploads: 'UUxyz' } },
+              statistics: { subscriberCount: '12300', viewCount: '456000' },
             },
           ],
         }),
@@ -59,9 +60,36 @@ describe('fetchFeaturedYoutube', () => {
     expect(result).toEqual({
       channelName: 'Stark [GD]',
       avatarUrl: 'https://example.com/avatar.jpg',
+      subscriberCount: 12300,
+      viewCount: 456000,
       video: { videoId: 'abc123', title: 'Latest Upload', description: 'A description' },
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('treats a hidden subscriber count as null', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        jsonResponse({
+          items: [
+            {
+              snippet: { title: 'Stark [GD]' },
+              contentDetails: { relatedPlaylists: { uploads: 'UUxyz' } },
+              statistics: { subscriberCount: '12300', viewCount: '456000', hiddenSubscriberCount: true },
+            },
+          ],
+        }),
+      )
+      .mockResolvedValueOnce(
+        jsonResponse({ items: [{ snippet: { title: 'Latest Upload', resourceId: { videoId: 'abc123' } } }] }),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await fetchFeaturedYoutube('Stark-GD')
+
+    expect(result?.subscriberCount).toBeNull()
+    expect(result?.viewCount).toBe(456000)
   })
 
   it('returns null when the channel lookup fails', async () => {
@@ -120,7 +148,7 @@ describe('fetchFeaturedYoutube', () => {
   })
 })
 
-describe('fetchGdStats', () => {
+describe('fetchAredlStats', () => {
   afterEach(() => {
     vi.unstubAllGlobals()
   })
@@ -129,25 +157,25 @@ describe('fetchGdStats', () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
       jsonResponse({
         data: [
-          { rank: 999, total_points: 0, extremes: 0, user: { id: 'someone-else' } },
-          { rank: 20165, total_points: 0, extremes: 0, user: { id: GD_ACCOUNT.aredlUserId } },
+          { rank: 999, total_points: 0, user: { id: 'someone-else' } },
+          { rank: 20165, total_points: 0, user: { id: AREDL_ACCOUNT.userId } },
         ],
       }),
     )
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchGdStats()
+    const result = await fetchAredlStats()
 
-    expect(result).toEqual({ rank: 20165, totalPoints: 0, extremes: 0 })
+    expect(result).toEqual({ rank: 20165, totalPoints: 0 })
   })
 
   it('returns null when no entry matches the known user id', async () => {
-    const fetchMock = vi.fn().mockResolvedValueOnce(
-      jsonResponse({ data: [{ rank: 1, total_points: 100, extremes: 5, user: { id: 'someone-else' } }] }),
-    )
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ data: [{ rank: 1, total_points: 100, user: { id: 'someone-else' } }] }))
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchGdStats()
+    const result = await fetchAredlStats()
 
     expect(result).toBeNull()
   })
@@ -156,7 +184,7 @@ describe('fetchGdStats', () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse({}, false))
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchGdStats()
+    const result = await fetchAredlStats()
 
     expect(result).toBeNull()
   })
@@ -165,7 +193,7 @@ describe('fetchGdStats', () => {
     const fetchMock = vi.fn().mockRejectedValueOnce(new Error('network down'))
     vi.stubGlobal('fetch', fetchMock)
 
-    const result = await fetchGdStats()
+    const result = await fetchAredlStats()
 
     expect(result).toBeNull()
   })

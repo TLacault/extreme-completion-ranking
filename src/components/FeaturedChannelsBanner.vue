@@ -1,39 +1,73 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ExternalLink, Gamepad2, MonitorPlay, Play, Users } from '@lucide/vue'
+import { ChevronDown, ChevronUp, ExternalLink, Gamepad2, MonitorPlay, Play, Trophy, Users } from '@lucide/vue'
 import {
+  AREDL_ACCOUNT,
   FALLBACK_YOUTUBE,
   FEATURED_CHANNEL_HANDLE,
   GD_ACCOUNT,
   TWITCH_CONFIG,
+  fetchAredlStats,
   fetchFeaturedYoutube,
-  fetchGdStats,
-  type GdStats,
+  type AredlStats,
 } from '../services/featuredCreator'
 
+const EXPANDED_KEY = 'ecr:featuredBannerExpanded:v1'
+
 const youtube = ref(FALLBACK_YOUTUBE)
-const gdStats = ref<GdStats | null>(null)
+const aredlStats = ref<AredlStats | null>(null)
+const storedExpanded = localStorage.getItem(EXPANDED_KEY)
+const expanded = ref(storedExpanded === null ? true : storedExpanded === 'true')
 
 const videoHref = computed(() => `https://www.youtube.com/watch?v=${youtube.value.video.videoId}`)
 const thumbnailUrl = computed(() => `https://img.youtube.com/vi/${youtube.value.video.videoId}/mqdefault.jpg`)
 
 onMounted(async () => {
-  const [yt, stats] = await Promise.all([fetchFeaturedYoutube(FEATURED_CHANNEL_HANDLE), fetchGdStats()])
+  const [yt, stats] = await Promise.all([fetchFeaturedYoutube(FEATURED_CHANNEL_HANDLE), fetchAredlStats()])
   if (yt) youtube.value = yt
-  gdStats.value = stats
+  aredlStats.value = stats
 })
+
+function toggleExpanded(): void {
+  expanded.value = !expanded.value
+  localStorage.setItem(EXPANDED_KEY, String(expanded.value))
+}
+
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1).replace(/\.0$/, '')}K`
+  return String(n)
+}
 </script>
 
 <template>
   <div class="featured-wrap">
     <div class="featured-banner glass-panel glass-strong">
-      <div class="featured-inner">
+      <button v-if="!expanded" class="toggle-row" :aria-expanded="expanded" @click="toggleExpanded">
+        <span class="toggle-text">
+          <Play :size="11" />
+          <strong>{{ youtube.channelName }}</strong>
+          <span class="toggle-sub">{{ youtube.video.title }}</span>
+        </span>
+        <ChevronDown :size="16" />
+      </button>
+
+      <button v-else class="collapse-btn" aria-expanded="true" aria-label="Collapse featured creator" @click="toggleExpanded">
+        <ChevronUp :size="16" />
+      </button>
+
+      <div v-show="expanded" class="featured-inner">
         <div class="yt-section">
           <div class="yt-header">
             <img v-if="youtube.avatarUrl" class="yt-avatar" :src="youtube.avatarUrl" :alt="youtube.channelName" />
             <div>
               <p class="eyebrow"><Play :size="11" /> Featured creator</p>
               <h2 class="channel-name">{{ youtube.channelName }}</h2>
+              <p v-if="youtube.subscriberCount !== null || youtube.viewCount !== null" class="yt-stats">
+                <span v-if="youtube.subscriberCount !== null">{{ formatCount(youtube.subscriberCount) }} subscribers</span>
+                <span v-if="youtube.subscriberCount !== null && youtube.viewCount !== null"> · </span>
+                <span v-if="youtube.viewCount !== null">{{ formatCount(youtube.viewCount) }} views</span>
+              </p>
             </div>
           </div>
 
@@ -73,22 +107,32 @@ onMounted(async () => {
           <div class="side-card">
             <p class="eyebrow"><Gamepad2 :size="11" /> GD account</p>
             <p class="side-name">{{ GD_ACCOUNT.ign }}</p>
-            <dl class="gd-stats">
-              <div class="gd-stat">
-                <dt>Points</dt>
-                <dd>{{ gdStats ? gdStats.totalPoints.toLocaleString() : '—' }}</dd>
+            <dl class="stats-grid">
+              <div class="stat">
+                <dt>Extremes</dt>
+                <dd>{{ GD_ACCOUNT.extremes }}</dd>
               </div>
-              <div class="gd-stat">
-                <dt>DL rank</dt>
-                <dd>{{ gdStats ? `#${gdStats.rank}` : '—' }}</dd>
-              </div>
-              <div class="gd-stat">
+              <div class="stat">
                 <dt>In-game rank</dt>
                 <dd>#{{ GD_ACCOUNT.inGameRank }}</dd>
               </div>
-              <div class="gd-stat">
-                <dt>Extremes</dt>
-                <dd>{{ gdStats ? gdStats.extremes : '—' }}</dd>
+            </dl>
+          </div>
+
+          <div class="side-card">
+            <p class="eyebrow"><Trophy :size="11" /> AREDL account</p>
+            <a class="side-name side-name-link" :href="AREDL_ACCOUNT.profileUrl" target="_blank" rel="noopener">
+              {{ AREDL_ACCOUNT.name }}
+              <ExternalLink :size="11" />
+            </a>
+            <dl class="stats-grid">
+              <div class="stat">
+                <dt>DL rank</dt>
+                <dd>{{ aredlStats ? `#${aredlStats.rank}` : '—' }}</dd>
+              </div>
+              <div class="stat">
+                <dt>Points</dt>
+                <dd>{{ aredlStats ? aredlStats.totalPoints.toLocaleString() : '—' }}</dd>
               </div>
             </dl>
           </div>
@@ -149,14 +193,64 @@ onMounted(async () => {
   }
 }
 
-.featured-inner {
+.collapse-btn {
+  position: absolute;
+  top: 0.85rem;
+  right: 1rem;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.8rem;
+  height: 1.8rem;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  transition: color 200ms var(--ease), border-color 200ms var(--ease), box-shadow 200ms var(--ease);
+}
+
+.collapse-btn:hover {
+  color: var(--accent-cyan);
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 12px rgba(var(--glow-cyan), 0.35);
+}
+
+.toggle-row {
   position: relative;
-  display: grid;
-  grid-template-columns: 1.4fr 1fr;
-  gap: 1.5rem;
-  padding: 1.4rem 1.75rem;
-  border-radius: calc(var(--radius-lg) - 2px);
-  background: linear-gradient(155deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.015));
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1.1rem;
+  color: var(--text);
+  text-align: left;
+}
+
+.toggle-text {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.82rem;
+}
+
+.toggle-text strong {
+  flex-shrink: 0;
+  color: var(--accent-cyan);
+}
+
+.toggle-sub {
+  flex: 1 1 auto;
+  min-width: 0;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .eyebrow {
@@ -169,6 +263,15 @@ onMounted(async () => {
   text-transform: uppercase;
   color: var(--accent-cyan);
   text-shadow: 0 0 12px rgba(var(--glow-cyan), 0.5);
+}
+
+.featured-inner {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 1.5rem;
+  padding: 1.4rem 1.75rem;
+  border-radius: calc(var(--radius-lg) - 2px);
 }
 
 /* --- YouTube (primary) section --- */
@@ -187,8 +290,8 @@ onMounted(async () => {
 }
 
 .yt-avatar {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   object-fit: cover;
   border: 1px solid var(--border-strong);
@@ -204,6 +307,12 @@ onMounted(async () => {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.yt-stats {
+  margin: 0.15rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
 }
 
 .yt-body {
@@ -289,21 +398,20 @@ onMounted(async () => {
   text-decoration: none;
 }
 
-/* --- Side sections (Twitch / GD account) --- */
+/* --- Side sections (Twitch / GD account / AREDL account) --- */
 
 .side-sections {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
   min-width: 0;
 }
 
 .side-card {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
-  padding: 0.85rem 1rem;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: rgba(255, 255, 255, 0.03);
@@ -331,6 +439,18 @@ onMounted(async () => {
   color: var(--text);
 }
 
+.side-name-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-decoration: none;
+  width: fit-content;
+}
+
+.side-name-link:hover {
+  color: var(--accent-cyan);
+}
+
 .side-sub {
   margin: 0.1rem 0 0;
   font-size: 0.76rem;
@@ -351,21 +471,21 @@ onMounted(async () => {
   text-shadow: 0 0 10px rgba(var(--glow-cyan), 0.5);
 }
 
-.gd-stats {
+.stats-grid {
   margin: 0;
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0.5rem 0.75rem;
 }
 
-.gd-stat dt {
+.stat dt {
   font-size: 0.64rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-muted);
 }
 
-.gd-stat dd {
+.stat dd {
   margin: 0.05rem 0 0;
   font-family: var(--font-mono);
   font-size: 0.85rem;
@@ -405,20 +525,6 @@ onMounted(async () => {
 
   .thumb-link {
     width: 100%;
-  }
-
-  .side-sections {
-    flex-direction: row;
-  }
-
-  .side-card {
-    flex: 1 1 0;
-  }
-}
-
-@media (max-width: 560px) {
-  .side-sections {
-    flex-direction: column;
   }
 }
 </style>
