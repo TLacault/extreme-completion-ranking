@@ -52,11 +52,13 @@ function formatCount(n: number): string {
         <ChevronDown :size="16" />
       </button>
 
-      <button v-else class="collapse-btn" aria-expanded="true" aria-label="Collapse featured creator" @click="toggleExpanded">
-        <ChevronUp :size="16" />
-      </button>
-
       <div v-show="expanded" class="featured-inner">
+        <div class="collapse-bar">
+          <button class="collapse-btn" aria-expanded="true" aria-label="Collapse featured creator" @click="toggleExpanded">
+            <ChevronUp :size="16" />
+          </button>
+        </div>
+
         <div class="yt-section">
           <div class="yt-header">
             <img v-if="youtube.avatarUrl" class="yt-avatar" :src="youtube.avatarUrl" :alt="youtube.channelName" />
@@ -104,37 +106,39 @@ function formatCount(n: number): string {
             </a>
           </div>
 
-          <div class="side-card">
-            <p class="eyebrow"><Gamepad2 :size="11" /> GD account</p>
-            <p class="side-name">{{ GD_ACCOUNT.ign }}</p>
-            <dl class="stats-grid">
-              <div class="stat">
-                <dt>Extremes</dt>
-                <dd>{{ GD_ACCOUNT.extremes }}</dd>
-              </div>
-              <div class="stat">
-                <dt>In-game rank</dt>
-                <dd>#{{ GD_ACCOUNT.inGameRank }}</dd>
-              </div>
-            </dl>
-          </div>
+          <div class="side-card accounts-card">
+            <div class="account-col">
+              <p class="eyebrow"><Gamepad2 :size="11" /> GD account</p>
+              <p class="side-name">{{ GD_ACCOUNT.ign }}</p>
+              <dl class="stats-stack">
+                <div class="stat">
+                  <dt>Extremes</dt>
+                  <dd>{{ GD_ACCOUNT.extremes }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>In-game rank</dt>
+                  <dd>#{{ GD_ACCOUNT.inGameRank }}</dd>
+                </div>
+              </dl>
+            </div>
 
-          <div class="side-card">
-            <p class="eyebrow"><Trophy :size="11" /> AREDL account</p>
-            <a class="side-name side-name-link" :href="AREDL_ACCOUNT.profileUrl" target="_blank" rel="noopener">
-              {{ AREDL_ACCOUNT.name }}
-              <ExternalLink :size="11" />
-            </a>
-            <dl class="stats-grid">
-              <div class="stat">
-                <dt>DL rank</dt>
-                <dd>{{ aredlStats ? `#${aredlStats.rank}` : '—' }}</dd>
-              </div>
-              <div class="stat">
-                <dt>Points</dt>
-                <dd>{{ aredlStats ? aredlStats.totalPoints.toLocaleString() : '—' }}</dd>
-              </div>
-            </dl>
+            <div class="account-col account-col-divider">
+              <p class="eyebrow"><Trophy :size="11" /> AREDL account</p>
+              <a class="side-name side-name-link" :href="AREDL_ACCOUNT.profileUrl" target="_blank" rel="noopener">
+                {{ AREDL_ACCOUNT.name }}
+                <ExternalLink :size="11" />
+              </a>
+              <dl class="stats-stack">
+                <div class="stat">
+                  <dt>DL rank</dt>
+                  <dd>{{ aredlStats ? `#${aredlStats.rank}` : '—' }}</dd>
+                </div>
+                <div class="stat">
+                  <dt>Points</dt>
+                  <dd>{{ aredlStats ? aredlStats.totalPoints.toLocaleString() : '—' }}</dd>
+                </div>
+              </dl>
+            </div>
           </div>
         </div>
       </div>
@@ -193,11 +197,14 @@ function formatCount(n: number): string {
   }
 }
 
+.collapse-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  margin: -0.6rem 0 -0.4rem;
+}
+
 .collapse-btn {
-  position: absolute;
-  top: 0.85rem;
-  right: 1rem;
-  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -319,6 +326,8 @@ function formatCount(n: number): string {
   display: flex;
   gap: 1.25rem;
   align-items: center;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border);
 }
 
 .thumb-link {
@@ -471,11 +480,28 @@ function formatCount(n: number): string {
   text-shadow: 0 0 10px rgba(var(--glow-cyan), 0.5);
 }
 
-.stats-grid {
+.accounts-card {
+  flex-direction: row;
+}
+
+.account-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.account-col-divider {
+  border-left: 1px solid var(--border);
+  padding-left: 0.85rem;
+}
+
+.stats-stack {
   margin: 0;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .stat dt {
@@ -525,6 +551,19 @@ function formatCount(n: number): string {
 
   .thumb-link {
     width: 100%;
+  }
+}
+
+@media (max-width: 520px) {
+  .accounts-card {
+    flex-direction: column;
+  }
+
+  .account-col-divider {
+    border-left: none;
+    padding-left: 0;
+    border-top: 1px solid var(--border);
+    padding-top: 0.6rem;
   }
 }
 </style>
