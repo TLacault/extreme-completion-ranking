@@ -8,6 +8,7 @@ import LevelFormModal from './components/LevelFormModal.vue'
 import FilterBar from './components/FilterBar.vue'
 import DataToolbar from './components/DataToolbar.vue'
 import VideoPreviewModal from './components/VideoPreviewModal.vue'
+import FeaturedChannelsBanner from './components/FeaturedChannelsBanner.vue'
 
 const {
   addLevel,
@@ -98,6 +99,8 @@ function onImport(text: string): void {
         />
       </div>
     </header>
+
+    <FeaturedChannelsBanner />
 
     <p v-if="importError" class="import-error glass-panel" role="alert">{{ importError }}</p>
 
