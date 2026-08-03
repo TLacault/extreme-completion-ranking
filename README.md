@@ -10,6 +10,7 @@
 ![Vite](https://img.shields.io/badge/Vite-6-646cff?logo=vite&logoColor=white)
 ![Tests](https://img.shields.io/badge/tests-49%20passing-34d399)
 ![Backend](https://img.shields.io/badge/backend-none%20·%20localStorage-c4b5fd)
+[![License: MIT](https://img.shields.io/badge/license-MIT-6b7280)](LICENSE)
 
 ## **[▶ LIVE APP](https://tlacault.github.io/extreme-tracker/)**
 
@@ -70,4 +71,10 @@ npm test         # run the Vitest suite
 npm run build    # type-check and build for production
 ```
 
-See `docs/superpowers/specs/2026-07-30-demonlist-design.md` for the full design spec.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for how the app is put together.
+
+## 🤝 Contributing
+
+Bug reports, feature requests, and pull requests are welcome — see
+[`CONTRIBUTING.md`](CONTRIBUTING.md) for how to fork, set up the project
+locally, and submit a PR.
