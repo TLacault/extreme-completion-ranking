@@ -1,7 +1,8 @@
-import starkTwitchAvatar from '../assets/stark-pfp.jpg'
+import { AREDL_ACCOUNT, YOUTUBE_CONFIG } from './featuredCreatorConfig'
 
-export const FEATURED_CHANNEL_HANDLE = 'Stark-GD'
-export const FEATURED_CHANNEL_NAME = 'Stark [GD]'
+export { AREDL_ACCOUNT, FEATURED_AVATAR, FEATURED_CHANNEL_NAME, GD_ACCOUNT, TWITCH_CONFIG } from './featuredCreatorConfig'
+
+export const FEATURED_CHANNEL_HANDLE = YOUTUBE_CONFIG.handle
 
 export interface FeaturedVideo {
   videoId: string
@@ -18,37 +19,11 @@ export interface FeaturedYoutube {
 }
 
 export const FALLBACK_YOUTUBE: FeaturedYoutube = {
-  channelName: FEATURED_CHANNEL_NAME,
+  channelName: YOUTUBE_CONFIG.name,
   avatarUrl: null,
-  subscriberCount: null,
-  viewCount: null,
-  video: {
-    videoId: 'KXjEscmAALQ',
-    title: 'Astral Divinity 100% // New Hardest Extreme Demon // TOP 433',
-    description: '',
-  },
-}
-
-export const TWITCH_CONFIG = {
-  name: FEATURED_CHANNEL_NAME,
-  url: 'https://www.twitch.tv/starkgd',
-  schedule: '9 PM EST, daily',
-  avatarUrl: starkTwitchAvatar,
-}
-
-// TODO: replace with his real extreme-completion count (AREDL's live count
-// undercounts him since not all of his submissions are approved yet).
-export const GD_ACCOUNT = {
-  ign: 'STARKILLER33',
-  extremes: 0,
-  inGameRank: 8547,
-}
-
-export const AREDL_ACCOUNT = {
-  name: 'STARK',
-  userId: '75db4fde-e2cb-449c-a878-f1a5f4004616',
-  searchName: 'STARK',
-  profileUrl: 'https://aredl.net/profile/user/75db4fde-e2cb-449c-a878-f1a5f4004616',
+  subscriberCount: YOUTUBE_CONFIG.fallbackSubscriberCount,
+  viewCount: YOUTUBE_CONFIG.fallbackViewCount,
+  video: YOUTUBE_CONFIG.fallbackVideo,
 }
 
 interface ChannelsResponse {
@@ -100,7 +75,7 @@ export async function fetchFeaturedYoutube(handle: string): Promise<FeaturedYout
     const viewCount = stats?.viewCount !== undefined ? Number(stats.viewCount) : null
 
     return {
-      channelName: channel?.snippet?.title ?? FEATURED_CHANNEL_NAME,
+      channelName: channel?.snippet?.title ?? YOUTUBE_CONFIG.name,
       avatarUrl: channel?.snippet?.thumbnails?.medium?.url ?? channel?.snippet?.thumbnails?.default?.url ?? null,
       subscriberCount,
       viewCount,

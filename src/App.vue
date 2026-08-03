@@ -100,7 +100,7 @@ function onImport(text: string): void {
       </div>
     </header>
 
-    <FeaturedChannelsBanner />
+    <FeaturedChannelsBanner @play-video="playingVideoId = $event" />
 
     <p v-if="importError" class="import-error glass-panel" role="alert">{{ importError }}</p>
 
