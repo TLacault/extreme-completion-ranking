@@ -357,7 +357,7 @@ function formatCount(n: number): string {
 
 .bento-twitch {
   flex: 1;
-  border-color: rgba(var(--glow-violet), 0.35);
+  border-color: rgba(var(--glow-violet), 0.5);
 }
 
 .bento-twitch:hover {
@@ -374,7 +374,7 @@ function formatCount(n: number): string {
 .bento-gd {
   flex: 1;
   min-width: 0;
-  border-color: rgba(var(--glow-lime), 0.3);
+  border-color: rgba(var(--glow-lime), 0.5);
 }
 
 .bento-gd:hover {
@@ -385,7 +385,7 @@ function formatCount(n: number): string {
 .bento-aredl {
   flex: 1;
   min-width: 0;
-  border-color: rgba(var(--glow-cyan), 0.3);
+  border-color: rgba(var(--glow-cyan), 0.5);
 }
 
 .bento-aredl:hover {
@@ -439,13 +439,12 @@ function formatCount(n: number): string {
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: conic-gradient(from var(--angle), var(--accent-magenta), var(--accent-violet), var(--accent-cyan), var(--accent-magenta));
+  background: var(--accent-red);
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
   opacity: 0.5;
-  animation: rotate-border 7s linear infinite;
   transition: opacity 400ms var(--ease);
   pointer-events: none;
 }

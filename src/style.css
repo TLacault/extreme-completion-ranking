@@ -10,11 +10,13 @@
   --accent-violet: #7b2ff7;
   --accent-cyan: #2de2e6;
   --accent-lime: #c6ff3d;
+  --accent-red: #ff4757;
   --danger: #ff4757;
   --glow-magenta: 255, 61, 154;
   --glow-violet: 123, 47, 247;
   --glow-cyan: 45, 226, 230;
   --glow-lime: 198, 255, 61;
+  --glow-red: 255, 71, 87;
   --glow-danger: 255, 71, 87;
   --font-display: 'Unbounded', sans-serif;
   --font-body: 'Inter', sans-serif;
