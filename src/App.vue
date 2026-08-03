@@ -119,6 +119,10 @@ function onImport(text: string): void {
 
     <LevelFormModal v-if="showModal" :level="editingLevel" @save="onSave" @close="showModal = false" />
     <VideoPreviewModal v-if="playingVideoId" :video-id="playingVideoId" @close="playingVideoId = null" />
+
+    <footer class="app-footer">
+      Made with 💀 by <a href="https://github.com/TLacault" target="_blank" rel="noopener">Tim Lacault</a>
+    </footer>
   </div>
 </template>
 
@@ -191,5 +195,24 @@ h1 {
   box-shadow: 0 0 20px rgba(var(--glow-danger), 0.2);
   color: #ffb3ba;
   font-size: 0.85rem;
+}
+
+.app-footer {
+  margin: 0.5rem 0 0;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.app-footer a {
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 200ms var(--ease);
+}
+
+.app-footer a:hover {
+  color: var(--accent-cyan);
 }
 </style>
