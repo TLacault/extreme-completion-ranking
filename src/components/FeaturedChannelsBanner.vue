@@ -701,6 +701,17 @@ function formatCount(n: number): string {
   .bento-main {
     flex-direction: column;
   }
+
+  /*
+   * Stacking moves the flex basis onto the block axis, so the 0 basis that
+   * shares width side-by-side would instead ask for zero height. The video
+   * cell clips its own overflow, which zeroes its automatic minimum size too,
+   * leaving nothing to hold it open. Stacked cells size to their content.
+   */
+  .bento-video,
+  .bento-right {
+    flex: 0 0 auto;
+  }
 }
 
 @media (max-width: 699.98px) {
