@@ -33,17 +33,16 @@ Start typing a level name and get live suggestions straight from the AREDL/DL da
 ![Add level modal with AREDL/DL search autocomplete](.github/screenshots/autofill.png)
 
 ### 🏆 A ranking table that flexes
-Sortable by AREDL rank, DL rank, attempts, date, or enjoyment. Top 3 placements get crown/medal icons, DL-ranked levels get **Main / Extended / Legacy** tier badges, and attempt counts light up with an escalating heat glow the more soul-crushing a level gets (5k, 10k+... you know who you are).
+> Sortable by AREDL rank, DL rank, attempts, date, or enjoyment. Top 3 placements get crown/medal icons, DL-ranked levels get **Main / Extended / Legacy** tier badges, and attempt counts light up with an escalating heat glow the more soul-crushing a level gets (5k, 10k+... you know who you are).
 
-### 🎯 Status tracking that's actually color-coded everywhere
-Every level is **Completed**, **Currently Completing**, or **Planned** — and that status uses the exact same green / amber / violet color language across the table, the filters, and the edit form, so you always know what you're looking at at a glance.
+### 🎯 Status tracking & Attempts count
+> Every level is **Completed**, **Currently Completing**, or **Planned** — and that status uses the exact same green / amber / violet color language across the table, the filters, and the edit form, so you always know what you're looking at at a glance.
 
-### 🛠️ A fully configurable Options bar
-One collapsible panel to rule them all: filter by status, search by name or creator, range-filter attempts/enjoyment/date — and toggle **any column on or off** to build the exact table you want. Your layout preference is remembered across sessions.
+### 🛠️ A fully configurable Table
+> One collapsible panel to rule them all: filter by status, search by name or creator, range-filter attempts/enjoyment/date — and toggle **any column on or off** to build the exact table you want. Your layout preference is remembered across sessions.
 
-
-### 🔄 Ranks that sync themselves
-On load (and once a day after that), AREDL and Pointercrate DL positions refresh automatically in the background, so your list never goes stale.
+### 🔄 Auto-refreshing ranks
+> On load (and once a day after that), AREDL and Pointercrate DL positions refresh automatically in the background, so your list never goes stale.
 
 ### 🎥 Built-in video playback
 Click any level's video thumbnail to watch the completion clip in an embedded player, right there in the table — no new tab required.
