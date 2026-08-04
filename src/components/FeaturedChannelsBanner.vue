@@ -24,6 +24,7 @@ import {
   fetchFeaturedYoutube,
   type AredlStats,
 } from '../services/featuredCreator'
+import { matchesPhone } from '../composables/useViewport'
 
 const emit = defineEmits<{ playVideo: [videoId: string] }>()
 
@@ -32,7 +33,9 @@ const EXPANDED_KEY = 'ecr:featuredDetailsExpanded:v1'
 const youtube = ref(FALLBACK_YOUTUBE)
 const aredlStats = ref<AredlStats | null>(null)
 const storedExpanded = localStorage.getItem(EXPANDED_KEY)
-const expanded = ref(storedExpanded === null ? true : storedExpanded === 'true')
+// A saved preference always wins; otherwise phones start collapsed so the
+// level list is the first thing on screen.
+const expanded = ref(storedExpanded === null ? !matchesPhone() : storedExpanded === 'true')
 
 const videoHref = computed(() => `https://www.youtube.com/watch?v=${youtube.value.video.videoId}`)
 const thumbnailUrl = computed(() => `https://img.youtube.com/vi/${youtube.value.video.videoId}/mqdefault.jpg`)
@@ -700,7 +703,7 @@ function formatCount(n: number): string {
   }
 }
 
-@media (max-width: 520px) {
+@media (max-width: 699.98px) {
   .video-row {
     flex-wrap: wrap;
   }
@@ -712,6 +715,30 @@ function formatCount(n: number): string {
 
   .bento-bottom-row {
     flex-direction: column;
+  }
+
+  .identity-bar {
+    min-height: 44px;
+  }
+
+  .bento-video-inner {
+    padding: 0.7rem;
+  }
+}
+
+/* Landscape phone: keep the bento side-by-side but compress vertical padding. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .bento-video-inner {
+    padding: 0.6rem;
+  }
+
+  .video-desc {
+    display: none;
+  }
+
+  .yt-avatar {
+    width: 32px;
+    height: 32px;
   }
 }
 

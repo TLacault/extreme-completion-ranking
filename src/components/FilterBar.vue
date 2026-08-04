@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "@lucide/vue";
 import type { ColumnKey, ColumnVisibility, Filters } from "../composables/useLevels";
+import { matchesPhone } from "../composables/useViewport";
 import type { LevelStatus } from "../types";
 
 const props = defineProps<{
@@ -47,7 +48,8 @@ const COLUMN_TOGGLES: { key: ColumnKey; label: string; icon: LucideIcon }[] = [
   { key: "video", label: "Video", icon: Video },
 ];
 
-const expanded = ref(true);
+// On a phone the open panel fills the screen, so the list wins the first fold.
+const expanded = ref(!matchesPhone());
 
 const activeFilterCount = computed(() => {
   const f = props.filters;
@@ -358,5 +360,64 @@ const activeFilterCount = computed(() => {
 
 .search:focus-visible {
   background: rgba(var(--glow-magenta), 0.05);
+}
+
+@media (max-width: 699.98px) {
+  .filter-bar {
+    padding: 0.4rem 1rem;
+  }
+
+  .filter-toggle {
+    padding: 0.6rem 0.2rem;
+    min-height: 44px;
+  }
+
+  /* Fields go one per row; ranges split the width evenly instead of overflowing. */
+  .filter-body {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.9rem;
+    padding-bottom: 1.1rem;
+  }
+
+  .search-field {
+    align-self: stretch;
+  }
+
+  .search {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .range-inputs {
+    gap: 0.5rem;
+  }
+
+  .range-inputs input {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .toggle-chip {
+    padding: 0.5rem 0.8rem;
+    min-height: 38px;
+  }
+}
+
+/* Landscape phone: two field columns fit, but vertical padding must shrink. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .filter-bar {
+    padding: 0.3rem 1rem;
+  }
+
+  .filter-body {
+    gap: 0.9rem;
+    padding: 0.5rem 0.2rem 0.7rem;
+  }
+
+  .status-field {
+    padding: 0.45rem 0.2rem 0.6rem;
+  }
 }
 </style>

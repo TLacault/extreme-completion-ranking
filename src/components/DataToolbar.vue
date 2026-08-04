@@ -172,6 +172,8 @@ function onRefreshClick(): void {
   top: calc(100% + 0.6rem);
   right: 0;
   width: 230px;
+  /* Never wider than the screen on a 360px phone. */
+  max-width: calc(100vw - 2rem);
   padding: 0.5rem;
   z-index: 100;
   background: linear-gradient(155deg, rgba(20, 14, 32, 0.52), rgba(20, 14, 32, 0.4));
@@ -243,5 +245,19 @@ function onRefreshClick(): void {
 
 .sync-label.error {
   color: #ffb3ba;
+}
+
+@media (pointer: coarse) {
+  .menu-item {
+    min-height: 44px;
+  }
+}
+
+/* Short landscape can't fit the whole menu below the button. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .menu {
+    max-height: calc(100dvh - 5rem);
+    overflow-y: auto;
+  }
 }
 </style>

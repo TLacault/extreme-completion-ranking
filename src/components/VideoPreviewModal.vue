@@ -57,7 +57,11 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 
 .player {
   position: relative;
-  width: min(880px, 92vw);
+  /*
+   * Constrained on both axes: the third term caps width by available height so
+   * a 16:9 frame can never overflow a short landscape viewport.
+   */
+  width: min(880px, 92vw, calc(88dvh * 16 / 9));
   aspect-ratio: 16 / 9;
   background: #000;
   border-radius: var(--radius-lg);
@@ -96,5 +100,21 @@ onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 .close-btn:hover {
   box-shadow: 0 0 16px rgba(var(--glow-magenta), 0.6);
   transform: scale(1.06);
+}
+
+/*
+ * The outset position gets clipped once the player spans most of the viewport,
+ * so on small screens the button moves inside the frame.
+ */
+@media (max-width: 699.98px), (orientation: landscape) and (max-height: 500px) {
+  .close-btn {
+    top: 0.5rem;
+    right: 0.5rem;
+    width: 2.4rem;
+    height: 2.4rem;
+    background: rgba(6, 4, 15, 0.7);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
 }
 </style>

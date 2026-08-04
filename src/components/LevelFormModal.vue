@@ -592,4 +592,121 @@ textarea {
   gap: 0.6rem;
   margin-top: 0.5rem;
 }
+
+/*
+ * Phone portrait: the dialog becomes a bottom sheet pinned to the lower edge,
+ * which keeps the action row within thumb reach and clear of the home indicator.
+ */
+@media (max-width: 699.98px) {
+  .overlay {
+    align-items: flex-end;
+  }
+
+  .modal {
+    width: 100%;
+    max-height: 92dvh;
+    padding: 1.25rem 1.1rem;
+    padding-bottom: max(1.25rem, env(safe-area-inset-bottom));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    animation: sheet-in 260ms var(--ease);
+  }
+
+  .modal h2 {
+    font-size: 1.15rem;
+  }
+
+  /* Paired fields stack so inputs keep a usable width. */
+  .row {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .status-row {
+    gap: 0.4rem;
+  }
+
+  .status-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    min-height: 40px;
+  }
+
+  input,
+  textarea,
+  select {
+    /* Anything under 16px makes iOS Safari zoom the viewport on focus. */
+    font-size: 16px;
+  }
+
+  .actions {
+    position: sticky;
+    bottom: 0;
+    gap: 0.5rem;
+    margin: 0.75rem -1.1rem -1.25rem;
+    padding: 0.75rem 1.1rem;
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(16, 10, 26, 0.98), rgba(16, 10, 26, 0.86));
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/*
+ * Landscape phone: only ~390px of height, so the form fills it and the action
+ * row sticks to the bottom rather than scrolling out of reach.
+ */
+@media (orientation: landscape) and (max-height: 500px) {
+  .modal {
+    width: min(680px, 94vw);
+    max-height: 94dvh;
+    padding: 1rem 1.1rem;
+  }
+
+  /*
+   * The heading scrolls away here rather than sticking: its gradient relies on
+   * background-clip:text, which cannot coexist with an opaque sticky backdrop.
+   * Only the action row needs to stay pinned.
+   */
+  .modal h2 {
+    margin-bottom: 0.4rem;
+    font-size: 1.05rem;
+  }
+
+  form {
+    gap: 0.6rem;
+  }
+
+  .actions {
+    position: sticky;
+    bottom: -1rem;
+    z-index: 3;
+    margin: 0.4rem -1.1rem -1rem;
+    padding: 0.6rem 1.1rem;
+    background: linear-gradient(to top, rgba(16, 10, 26, 0.98), rgba(16, 10, 26, 0.86));
+    border-top: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+
+  .suggestions {
+    max-height: 160px;
+  }
+}
 </style>

@@ -6,14 +6,10 @@ import {
   ChevronDown,
   ChevronUp,
   CircleCheck,
-  Crown,
   Flame,
   Gamepad2,
   Hash,
   Heart,
-  Hourglass,
-  ListTodo,
-  Medal,
   Pencil,
   Play,
   Repeat,
@@ -24,16 +20,31 @@ import {
   Video,
   type LucideIcon,
 } from "@lucide/vue";
-import type { Level, LevelStatus } from "../types";
-import { bestRunRange, levelStatus, type ColumnKey, type ColumnVisibility, type SortKey, type SortDir } from "../composables/useLevels";
+import type { Level } from "../types";
+import type { ColumnKey, ColumnVisibility, SortKey, SortDir } from "../composables/useLevels";
+import {
+  attemptsLabel,
+  bestRunLabel,
+  dateLabel,
+  heatClass,
+  listBadge,
+  pipStyle,
+  rankMedal,
+  statusBadge,
+} from "../services/levelPresentation";
 import { getYoutubeVideoId } from "../utils/youtube";
 
-const props = defineProps<{
-  levels: Level[];
-  sortKey: SortKey;
-  sortDir: SortDir;
-  columnVisibility: ColumnVisibility;
-}>();
+const props = withDefaults(
+  defineProps<{
+    levels: Level[];
+    sortKey: SortKey;
+    sortDir: SortDir;
+    columnVisibility: ColumnVisibility;
+    /** Short landscape viewports shorten the widest cells to avoid sideways scroll. */
+    compact?: boolean;
+  }>(),
+  { compact: false },
+);
 
 const emit = defineEmits<{
   sort: [key: SortKey];
@@ -65,78 +76,9 @@ const visibleColumnCount = computed(
     1, // actions
 );
 
-function heatClass(attempts: number | null): string {
-  if (attempts === null) return "";
-  if (attempts >= 10000) return "heat-3";
-  if (attempts >= 5000) return "heat-2";
-  if (attempts >= 2000) return "heat-1";
-  return "";
-}
-
 function sortIndicator(key: SortKey): LucideIcon | null {
   if (props.sortKey !== key) return null;
   return props.sortDir === "asc" ? ChevronUp : ChevronDown;
-}
-
-const MEDALS: Record<number, { icon: LucideIcon; className: string }> = {
-  1: { icon: Crown, className: "medal-gold" },
-  2: { icon: Medal, className: "medal-silver" },
-  3: { icon: Medal, className: "medal-bronze" },
-};
-
-function rankMedal(position: number) {
-  return MEDALS[position] ?? null;
-}
-
-const LIST_TIERS: { max: number; label: string; className: string }[] = [
-  { max: 75, label: "Main", className: "badge-main" },
-  { max: 150, label: "Extended", className: "badge-extended" },
-  { max: Infinity, label: "Legacy", className: "badge-legacy" },
-];
-
-function listBadge(dlRank: number | null) {
-  if (dlRank === null) return null;
-  return LIST_TIERS.find((tier) => dlRank <= tier.max) ?? null;
-}
-
-const STATUS_BADGES: Record<LevelStatus, { label: string; icon: LucideIcon; className: string }> = {
-  completed: { label: "Completed", icon: CircleCheck, className: "status-completed" },
-  in_progress: { label: "Current", icon: Hourglass, className: "status-in-progress" },
-  planned: { label: "Planned", icon: ListTodo, className: "status-planned" },
-};
-
-function statusBadge(level: Level) {
-  return STATUS_BADGES[levelStatus(level)];
-}
-
-function bestRunLabel(level: Level): string {
-  if (levelStatus(level) === "completed") return "100%";
-  const { min, max } = bestRunRange(level);
-  if (min === 0) return `${min}% - ${max}%`;
-  const mid = Math.round((min + max) / 2);
-  return `${min}% - ${max}% (${mid}%)`;
-}
-
-const VIOLET: [number, number, number] = [123, 47, 247];
-const MAGENTA: [number, number, number] = [255, 61, 154];
-const LIME: [number, number, number] = [198, 255, 61];
-
-function mixColor(
-  c1: [number, number, number],
-  c2: [number, number, number],
-  t: number,
-): string {
-  const r = Math.round(c1[0] + (c2[0] - c1[0]) * t);
-  const g = Math.round(c1[1] + (c2[1] - c1[1]) * t);
-  const b = Math.round(c1[2] + (c2[2] - c1[2]) * t);
-  return `${r}, ${g}, ${b}`;
-}
-
-function pipColor(pip: number): string {
-  const t = (pip - 1) / 9;
-  return t <= 0.5
-    ? mixColor(VIOLET, MAGENTA, t / 0.5)
-    : mixColor(MAGENTA, LIME, (t - 0.5) / 0.5);
 }
 
 function onVideoClick(level: Level): void {
@@ -229,12 +171,15 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
             {{ index + 1 }}
           </td>
           <td v-if="columnVisibility.status" class="status-col">
-            <span :class="['status-badge', statusBadge(level).className]">
+            <span
+              :class="['status-badge', statusBadge(level).className]"
+              :title="statusBadge(level).label"
+            >
               <component :is="statusBadge(level).icon" :size="12" />
-              {{ statusBadge(level).label }}
+              <span class="status-text">{{ statusBadge(level).label }}</span>
             </span>
           </td>
-          <td>{{ level.name }}</td>
+          <td class="name-cell">{{ level.name }}</td>
           <td v-if="columnVisibility.aredlRank" class="mono">{{ level.aredlRank ?? "—" }}</td>
           <td v-if="columnVisibility.dlRank" class="mono">
             {{ level.dlRank ?? "—" }}
@@ -246,13 +191,9 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
             </span>
           </td>
           <td v-if="columnVisibility.attempts" class="mono" :class="heatClass(level.attempts)">
-            {{
-              level.attempts !== null
-                ? level.attempts.toLocaleString()
-                : level.attemptsNote || "—"
-            }}
+            {{ attemptsLabel(level) }}
           </td>
-          <td v-if="columnVisibility.date" class="mono">{{ level.date ?? (level.dateNote || "—") }}</td>
+          <td v-if="columnVisibility.date" class="mono date-col">{{ dateLabel(level) }}</td>
           <td v-if="columnVisibility.enjoyment">
             <span class="enjoyment-meter" v-if="level.enjoyment !== null">
               <span
@@ -260,19 +201,14 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
                 :key="pip"
                 class="pip"
                 :class="{ lit: pip <= level.enjoyment }"
-                :style="
-                  pip <= level.enjoyment
-                    ? {
-                        background: `rgb(${pipColor(pip)})`,
-                        boxShadow: `0 0 4px rgba(${pipColor(pip)}, 0.7)`,
-                      }
-                    : {}
-                "
+                :style="pipStyle(pip, level.enjoyment)"
               ></span>
             </span>
             <span v-else class="mono">—</span>
           </td>
-          <td v-if="columnVisibility.bestRun" class="mono bestrun-col">{{ bestRunLabel(level) }}</td>
+          <td v-if="columnVisibility.bestRun" class="mono bestrun-col">
+            {{ bestRunLabel(level, props.compact) }}
+          </td>
           <td v-if="columnVisibility.video" class="video-col">
             <button
               v-if="level.videoUrl && getYoutubeVideoId(level.videoUrl)"
@@ -329,6 +265,7 @@ function onRowDblClick(event: MouseEvent, level: Level): void {
   padding: 0;
   overflow-x: auto;
   overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
 }
 
 .level-table {
@@ -419,101 +356,16 @@ th.sortable:hover {
   color: var(--accent-magenta);
 }
 
-.mono {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.medal-icon {
-  vertical-align: -2px;
-  margin-right: 0.3rem;
-}
-
-.medal-gold {
-  color: #ffd75e;
-  filter: drop-shadow(0 0 6px rgba(255, 215, 94, 0.7));
-}
-
-.medal-silver {
-  color: #d8d8e2;
-  filter: drop-shadow(0 0 6px rgba(216, 216, 226, 0.55));
-}
-
-.medal-bronze {
-  color: #e0985a;
-  filter: drop-shadow(0 0 6px rgba(224, 152, 90, 0.6));
-}
-
 .rank-col {
   width: 3rem;
-}
-
-.list-badge {
-  display: inline-block;
-  margin-left: 0.5rem;
-  padding: 0.1rem 0.5rem;
-  border-radius: 999px;
-  font-family: var(--font-body);
-  font-size: 0.62rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-
-.badge-main {
-  color: #1a0e2e;
-  background: linear-gradient(120deg, var(--accent-lime), var(--accent-cyan));
-  box-shadow: 0 0 10px rgba(var(--glow-lime), 0.5);
-}
-
-.badge-extended {
-  color: var(--accent-cyan);
-  background: rgba(var(--glow-cyan), 0.14);
-  border: 1px solid rgba(var(--glow-cyan), 0.4);
-}
-
-.badge-legacy {
-  color: #f0b374;
-  background: rgba(224, 152, 90, 0.16);
-  border: 1px solid rgba(224, 152, 90, 0.45);
-  box-shadow: 0 0 8px rgba(224, 152, 90, 0.25);
 }
 
 .status-col {
   width: 1%;
 }
 
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.55rem;
-  border-radius: 6px;
-  font-family: var(--font-body);
-  font-size: 0.68rem;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.status-completed {
-  color: #34d399;
-  background: rgba(52, 211, 153, 0.14);
-  border: 1px solid rgba(52, 211, 153, 0.4);
-  box-shadow: 0 0 8px rgba(52, 211, 153, 0.25);
-}
-
-.status-in-progress {
-  color: #fbbf24;
-  background: rgba(251, 191, 36, 0.14);
-  border: 1px solid rgba(251, 191, 36, 0.4);
-  box-shadow: 0 0 8px rgba(251, 191, 36, 0.25);
-}
-
-.status-planned {
-  color: #c4b5fd;
-  background: rgba(196, 181, 253, 0.12);
-  border: 1px solid rgba(196, 181, 253, 0.35);
+.level-table .list-badge {
+  margin-left: 0.5rem;
 }
 
 tbody tr {
@@ -545,6 +397,10 @@ tbody tr:not(.empty-row):hover {
   white-space: nowrap;
 }
 
+.actions-col .icon-btn + .icon-btn {
+  margin-left: 0.35rem;
+}
+
 .bestrun-col {
   white-space: nowrap;
 }
@@ -554,125 +410,111 @@ tbody tr:not(.empty-row):hover {
   text-align: center;
 }
 
-.video-thumb {
-  position: relative;
-  width: 64px;
-  height: 36px;
-  padding: 0;
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  overflow: hidden;
-  background: none;
-  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
-}
-
-.video-thumb:hover {
-  border-color: var(--accent-magenta);
-  box-shadow: 0 0 14px rgba(var(--glow-magenta), 0.45);
-}
-
-.video-thumb img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-}
-
-.video-thumb .play-icon {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #fff;
-  text-shadow: 0 0 4px rgba(0, 0, 0, 0.8);
-  background: rgba(10, 6, 18, 0.15);
-}
-
-.video-thumb:hover .play-icon {
-  color: var(--accent-magenta);
-}
-
-.video-link {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--accent-cyan);
-  width: 28px;
-  height: 28px;
-  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease);
-}
-
-.video-link:hover {
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px rgba(var(--glow-cyan), 0.45);
-}
-
-.icon-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  padding: 0;
-  margin-right: 0.35rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--text-muted);
-  transition: border-color 200ms var(--ease), box-shadow 200ms var(--ease),
-    color 200ms var(--ease);
-}
-
-.icon-btn:hover {
-  color: var(--accent-cyan);
-  border-color: var(--accent-cyan);
-  box-shadow: 0 0 12px rgba(var(--glow-cyan), 0.4);
-}
-
-.icon-btn-danger:hover {
-  color: var(--danger);
-  border-color: rgba(var(--glow-danger), 0.6);
-  box-shadow: 0 0 12px rgba(var(--glow-danger), 0.4);
-}
-
-.heat-1 {
-  text-shadow: 0 0 6px rgba(255, 61, 154, 0.45);
-}
-
-.heat-2 {
-  text-shadow: 0 0 10px rgba(255, 61, 154, 0.7);
-  color: var(--accent-magenta);
-}
-
-.heat-3 {
-  text-shadow: 0 0 14px rgba(255, 61, 154, 0.9);
-  color: var(--accent-magenta);
-  animation: pulse-heat 3s ease-in-out infinite;
-}
-
-@keyframes pulse-heat {
-  0%,
-  100% {
-    text-shadow: 0 0 14px rgba(255, 61, 154, 0.9);
+/*
+ * Between the card breakpoint and 1100px the table only fits in compact form:
+ * landscape phones, small tablets and split-screen windows all land here. The
+ * tighter rows also keep roughly twice as many levels on a short screen.
+ */
+@media (max-width: 1100px) {
+  th,
+  td {
+    padding: 0.35rem 0.32rem;
+    font-size: 0.78rem;
   }
-  50% {
-    text-shadow: 0 0 22px rgba(255, 61, 154, 1);
+
+  th:first-child,
+  td:first-child {
+    padding-left: 0.6rem;
+  }
+
+  th:last-child,
+  td:last-child {
+    padding-right: 0.6rem;
+  }
+
+  th {
+    font-size: 0.62rem;
+    letter-spacing: 0.03em;
+  }
+
+  /* Header glyphs cost ~22px of column width each — the labels carry the meaning. */
+  .th-icon {
+    display: none;
+  }
+
+  .th-label {
+    gap: 0.2rem;
+  }
+
+  .rank-col {
+    width: 2.5rem;
+  }
+
+  .medal-icon {
+    margin-right: 0.15rem;
+  }
+
+  /* Status collapses to its colour-coded icon; the title attribute keeps the label. */
+  .status-text {
+    display: none;
+  }
+
+  .status-badge {
+    padding: 0.25rem 0.35rem;
+  }
+
+  .name-cell {
+    max-width: 6rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* The widest numeric cells — a slightly smaller face buys back ~15px. */
+  .bestrun-col,
+  td.mono {
+    font-size: 0.72rem;
+  }
+
+  /* Free-text date notes ("two years ago") would otherwise stretch the column. */
+  .date-col {
+    max-width: 5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .list-badge {
+    font-size: 0.55rem;
+    padding: 0.1rem 0.35rem;
+  }
+
+  .level-table .list-badge {
+    margin-left: 0.3rem;
+  }
+
+  .pip {
+    width: 4px;
+    height: 10px;
+  }
+
+  .video-col {
+    width: 3.4rem;
+  }
+
+  .video-thumb {
+    width: 44px;
+    height: 26px;
+  }
+
+  .actions-col .icon-btn + .icon-btn {
+    margin-left: 0.2rem;
   }
 }
 
-.enjoyment-meter {
-  display: inline-flex;
-  gap: 2px;
-}
-
-.pip {
-  width: 6px;
-  height: 12px;
-  border-radius: 2px;
-  background: var(--border);
+/* Only on a short screen is the 44px touch target too tall to afford. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .actions-col .icon-btn {
+    width: 30px;
+    height: 30px;
+  }
 }
 </style>

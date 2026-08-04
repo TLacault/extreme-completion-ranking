@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { Plus, Skull } from '@lucide/vue'
 import { useLevels } from './composables/useLevels'
 import type { Level } from './types'
-import LevelTable from './components/LevelTable.vue'
+import LevelList from './components/LevelList.vue'
 import LevelFormModal from './components/LevelFormModal.vue'
 import FilterBar from './components/FilterBar.vue'
 import DataToolbar from './components/DataToolbar.vue'
@@ -106,7 +106,7 @@ function onImport(text: string): void {
 
     <FilterBar :filters="filters" :column-visibility="columnVisibility" />
 
-    <LevelTable
+    <LevelList
       :levels="visibleLevels"
       :sort-key="sortKey"
       :sort-dir="sortDir"
@@ -128,10 +128,14 @@ function onImport(text: string): void {
 
 <style scoped>
 .page {
-  min-height: 100vh;
+  min-height: 100dvh;
   max-width: 1400px;
   margin: 0 auto;
   padding: clamp(1rem, 3vw, 2.5rem);
+  /* Keep content clear of the notch, rounded corners and home indicator. */
+  padding-left: max(clamp(1rem, 3vw, 2.5rem), env(safe-area-inset-left));
+  padding-right: max(clamp(1rem, 3vw, 2.5rem), env(safe-area-inset-right));
+  padding-bottom: max(clamp(1rem, 3vw, 2.5rem), env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
@@ -163,7 +167,8 @@ h1 {
   align-items: center;
   gap: 0.6rem;
   font-family: var(--font-display);
-  font-size: 2rem;
+  font-size: clamp(1.35rem, 6vw, 2rem);
+  line-height: 1.15;
   letter-spacing: 0.02em;
 }
 
@@ -214,5 +219,59 @@ h1 {
 
 .app-footer a:hover {
   color: var(--accent-cyan);
+}
+
+/* Phone portrait: header stacks and the actions become a full-width row. */
+@media (max-width: 699.98px) {
+  .page {
+    gap: 0.85rem;
+  }
+
+  .app-header {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 0.9rem;
+    padding: 1.1rem 1.1rem 1.2rem;
+  }
+
+  .header-actions {
+    gap: 0.6rem;
+  }
+
+  .header-actions > * {
+    flex: 1;
+  }
+
+  /* DataToolbar renders a wrapper div, so the button inside needs stretching too. */
+  .header-actions :deep(.options-wrapper) > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .header-actions > .btn {
+    justify-content: center;
+  }
+}
+
+/* Landscape phone: trim vertical chrome so the list gets the space. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .page {
+    padding-top: 0.6rem;
+    gap: 0.7rem;
+  }
+
+  .app-header {
+    padding: 0.7rem 1rem;
+    align-items: center;
+  }
+
+  .eyebrow {
+    display: none;
+  }
+
+  .app-footer {
+    margin-top: 0.25rem;
+    padding-top: 0.7rem;
+  }
 }
 </style>
